@@ -56,6 +56,10 @@ export default function Decks({ currentMember }: DecksProps) {
     'Outro'
   ];
 
+  const dynamicArchetypes = metaDecks.length > 0 
+    ? [...new Set([...metaDecks.map(d => d.name), 'Outro'])]
+    : archetypes;
+
   // Helper to map set codes to pokemontcg.io IDs
   function mapSetCodeToTcgIo(setCode: string): string {
     const s = (setCode || '').toLowerCase();
@@ -839,7 +843,7 @@ export default function Decks({ currentMember }: DecksProps) {
                   onChange={(e) => setArchetype(e.target.value)}
                   className="w-full p-2.5 bg-slate-950 border border-slate-850 focus:border-purple-500 rounded-lg text-white text-sm outline-none"
                 >
-                  {archetypes.map(a => (
+                  {dynamicArchetypes.map(a => (
                     <option key={a} value={a}>{a}</option>
                   ))}
                 </select>

@@ -63,8 +63,8 @@ export default function Matches({ currentMember }: MatchesProps) {
   const [player2IsMember, setPlayer2IsMember] = useState(false);
   const [player2Id, setPlayer2Id] = useState('');
   const [deckName, setDeckName] = useState('');
-  const [deckArchetype, setDeckArchetype] = useState('Charizard ex');
-  const [deckPokemon1, setDeckPokemon1] = useState('charizard');
+  const [deckArchetype, setDeckArchetype] = useState('Pikachu ex');
+  const [deckPokemon1, setDeckPokemon1] = useState('pikachu');
   const [deckPokemon2, setDeckPokemon2] = useState('');
   const [selectedDeckId, setSelectedDeckId] = useState<string>('');
   const [opponentDeck, setOpponentDeck] = useState('');
@@ -75,20 +75,13 @@ export default function Matches({ currentMember }: MatchesProps) {
   const [registering, setRegistering] = useState(false);
 
   const archetypes = [
-    'Charizard ex',
-    'Regidrago VSTAR',
+    'Pikachu ex',
     'Raging Bolt ex',
-    'Gardevoir ex',
-    'Lugia VSTAR',
-    'Roaring Moon ex',
-    'Miraidon ex',
-    'Dragapult ex',
-    'Chien-Pao ex',
-    'Snorlax Block',
-    'Gholdengo ex',
-    'Iron Valiant ex',
     'Terapagos ex',
-    'Garchomp ex',
+    'Ceruledge ex',
+    'Dragapult ex',
+    'Archaludon ex',
+    'Roaring Moon ex',
     'Outro'
   ];
 

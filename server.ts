@@ -3,6 +3,7 @@ import path from 'path';
 import { createServer as createViteServer } from 'vite';
 import { GoogleGenAI, Type } from '@google/genai';
 import dotenv from 'dotenv';
+import * as cheerio from 'cheerio';
 
 dotenv.config();
 
@@ -108,41 +109,79 @@ async function fetchMetaFromLimitless(): Promise<any[]> {
     }
     
     const html = await response.text();
-    
-    // Scan table rows for deck links
-    const rows = html.match(/<tr[^>]*>[\s\S]*?<\/tr>/gi) || [];
-    const parsedDecks: { name: string; share: number; winRate: number }[] = [];
-    
-    for (const row of rows) {
-      // Find links pointing to decks
-      const linkMatch = row.match(/href="\/decks\/([^"]+)"[^>]*>([^<]+)<\/a>/i);
-      if (linkMatch) {
-        const deckName = linkMatch[2].trim();
-        
-        // Skip administrative or navigation links
-        if (['Decks', 'Tournaments', 'Cards', 'Stats', 'About', 'Contact', 'Home', 'Log In', 'Register'].includes(deckName)) {
-          continue;
+    const $ = cheerio.load(html);
+    const parsedDecks: any[] = [];
+
+    // Limitless TCG decks page has tables, usually table.striped, table.decks or similar
+    // Let's loop through table rows
+    $('table tr').each((i, rowElem) => {
+      const row = $(rowElem);
+      
+      // Look for a link like <a href="/decks/13">Charizard ex</a> or <a href="/decks/details/pikachu-ex">Pikachu ex</a>
+      const deckLink = row.find('a[href*="/decks/"]').first();
+      if (!deckLink.length) return;
+
+      const href = deckLink.attr('href') || '';
+      
+      // Filter out utility links
+      if (
+        href.includes('/completed') || 
+        href.includes('/history') || 
+        href.includes('/about') || 
+        href.includes('/cards') || 
+        href.includes('/types') ||
+        href.includes('/setup') ||
+        href.includes('/register')
+      ) {
+        return;
+      }
+
+      const deckName = deckLink.text().trim();
+      if (!deckName || ['Decks', 'Tournaments', 'Cards', 'Stats', 'About', 'Contact', 'Home', 'Log In', 'Register'].includes(deckName)) {
+        return;
+      }
+
+      // Extract all numbers with % sign in the row cells
+      const percentages: number[] = [];
+      row.find('td').each((j, tdElem) => {
+        const tdText = $(tdElem).text().trim();
+        const match = tdText.match(/(\d+(?:\.\d+)?)\s*%/);
+        if (match) {
+          percentages.push(parseFloat(match[1]));
         }
-        
-        // Find percentage cells (Metagame share and Win rate)
-        const percentMatches = [...row.matchAll(/>\s*(\d+(?:\.\d+)?)\s*%\s*</g)].map(m => parseFloat(m[1]));
-        
-        if (percentMatches.length >= 1) {
-          const share = percentMatches[0];
-          const winRate = percentMatches[1] || 50.0;
-          
-          parsedDecks.push({
-            name: deckName,
-            share,
-            winRate
-          });
+      });
+
+      const share = percentages[0] || 0;
+      const winRate = percentages[1] || 50.0;
+
+      // Extract image if present
+      let imgUrl = '';
+      const imgElem = row.find('img').first();
+      if (imgElem.length) {
+        imgUrl = imgElem.attr('src') || '';
+        if (imgUrl && !imgUrl.startsWith('http')) {
+          imgUrl = 'https://limitlesstcg.com' + imgUrl;
         }
       }
-    }
-    
+
+      // Check if we already have this deck to prevent duplicates
+      if (parsedDecks.some(d => d.name === deckName)) {
+        return;
+      }
+
+      parsedDecks.push({
+        name: deckName,
+        share,
+        winRate,
+        imageUrl: imgUrl || undefined,
+        updatedAt: new Date().toISOString().split('T')[0]
+      });
+    });
+
+    console.log('Successfully scraped decks from Limitless TCG. Count:', parsedDecks.length);
     return parsedDecks;
   } catch (err) {
-    console.error('Failed to scrape Limitless TCG live meta:', err);
+    console.error('Failed to scrape Limitless TCG live meta using cheerio:', err);
     return [];
   }
 }
@@ -218,10 +257,61 @@ function formatLimitlessDecklist(decklist: any): string {
   return listStr.trim();
 }
 
-app.get('/api/pokemon/meta', (req, res) => {
+app.get('/api/pokemon/meta', async (req, res) => {
+  try {
+    const scraped = await fetchMetaFromLimitless();
+    if (scraped && scraped.length > 0) {
+      // Enrich the scraped decks with cards, descriptions, and high-quality images from our fallback list or API
+      const enrichedDecks = [];
+      for (const deck of scraped) {
+        // Find if we have a matching fallback deck to copy descriptions/lists
+        const matchedFallback = fallbackMetaDecks.find(
+          fd => fd.name.toLowerCase() === deck.name.toLowerCase() || 
+                deck.name.toLowerCase().includes(fd.name.toLowerCase()) ||
+                fd.name.toLowerCase().includes(deck.name.toLowerCase())
+        );
+
+        let imageUrl = deck.imageUrl;
+        if (!imageUrl && matchedFallback) {
+          imageUrl = matchedFallback.imageUrl;
+        }
+
+        // If still no image, let's search pokemontcg.io for a high-res image of the main Pokemon!
+        if (!imageUrl) {
+          const tcgioCard = await findCardInTcgio(deck.name);
+          if (tcgioCard) {
+            imageUrl = tcgioCard.imageUrl;
+          }
+        }
+
+        enrichedDecks.push({
+          name: deck.name,
+          archetype: matchedFallback ? matchedFallback.archetype : `${deck.name} (H-On Standard)`,
+          share: deck.share,
+          winRate: deck.winRate,
+          imageUrl: imageUrl || 'https://images.pokemontcg.io/sv1/81.png', // fallback
+          updatedAt: deck.updatedAt || new Date().toISOString().split('T')[0],
+          description: matchedFallback ? matchedFallback.description : `Um deck competitivo destacado no metagame do Limitless TCG, focado em ${deck.name}. O formato padrão atual utiliza o bloco H-on.`,
+          cards: matchedFallback ? matchedFallback.cards : [
+            { name: `${deck.name}`, count: 4 }
+          ],
+          rawList: matchedFallback ? matchedFallback.rawList : `Pokémon: 4\n4 ${deck.name}\n\nTrainer: 0\n\nEnergy: 0`
+        });
+      }
+
+      return res.json({
+        decks: enrichedDecks,
+        tournamentName: 'Standard Metagame (Limitless TCG Live Scraping)'
+      });
+    }
+  } catch (err) {
+    console.error('Error in live meta api route:', err);
+  }
+
+  // Fallback to local decks if scrape fails or returns empty
   return res.json({
-    decks: metaDecks,
-    tournamentName: 'Standard format meta (Spirits Oficial)'
+    decks: fallbackMetaDecks,
+    tournamentName: 'Standard Metagame (Local Fallback)'
   });
 });
 
