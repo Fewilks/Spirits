@@ -39,26 +39,20 @@ export default function Decks({ currentMember }: DecksProps) {
   const [showImportModal, setShowImportModal] = useState(false);
   const [rawText, setRawText] = useState('');
   const [deckName, setDeckName] = useState('');
-  const [archetype, setArchetype] = useState('Charizard ex');
+  const [archetype, setArchetype] = useState('Pikachu ex');
   const [parsing, setParsing] = useState(false);
 
   // Active Deck Detail view
   const [activeDeck, setActiveDeck] = useState<DeckRecord | null>(null);
 
   const archetypes = [
-    'Charizard ex',
-    'Regidrago VSTAR',
+    'Pikachu ex',
     'Raging Bolt ex',
-    'Gardevoir ex',
-    'Lugia VSTAR',
-    'Roaring Moon ex',
-    'Miraidon ex',
-    'Dragapult ex',
-    'Chien-Pao ex',
-    'Snorlax Block',
-    'Gholdengo ex',
-    'Iron Valiant ex',
     'Terapagos ex',
+    'Ceruledge ex',
+    'Dragapult ex',
+    'Archaludon ex',
+    'Roaring Moon ex',
     'Outro'
   ];
 
