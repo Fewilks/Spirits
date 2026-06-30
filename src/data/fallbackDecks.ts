@@ -14,7 +14,7 @@ export const fallbackMetaDecks: MetaDeck[] = [
       { name: 'Latias ex (SSP 076)', count: 1 },
       { name: 'Magneton (SSP 052)', count: 3 }
     ],
-    rawList: `Pokémon: 16\n4 Magnemite SSP 51\n3 Magneton SSP 52\n3 Pikachu ex SSP 54\n1 Latias ex SSP 76\n2 Rotom V LOR 58\n1 Fezandipiti ex TWM 96\n1 Lumineon V BRS 40\n1 Mew ex MEW 151\n\nTrainer: 32\n4 Arven SVI 166\n3 Iono PAF 80\n2 Boss's Orders PAL 172\n1 Professor's Research SVI 190\n1 Briar SCR 132\n4 Buddy-Buddy Poffin TEF 144\n4 Ultra Ball SVI 196\n4 Nest Ball SVI 181\n2 Super Rod PAL 188\n3 Electric Generator SVI 162\n1 Prime Catcher TEF 157\n1 Gravity Mountain SFA 74\n2 Sparking Crystal SCR 142\n\nEnergy: 12\n12 Basic Lightning Energy SVE 4`
+    rawList: `Pokémon: 16\n4 Magnemite SSP 51\n3 Magneton SSP 52\n3 Pikachu ex SSP 54\n1 Latias ex SSP 76\n2 Rotom V LOR 58\n1 Fezandipiti ex TWM 96\n1 Squawkabilly ex PAF 75\n1 Mew ex MEW 151\n\nTrainer: 33\n4 Arven SVI 166\n3 Iono PAF 80\n2 Boss's Orders PAL 172\n1 Professor's Research SVI 189\n4 Buddy-Buddy Poffin TEF 144\n4 Nest Ball SVI 181\n4 Ultra Ball SVI 196\n3 Electric Generator SVI 162\n2 Super Rod PAL 188\n2 Switch SVI 194\n1 Prime Catcher TEF 157\n1 Sparking Crystal SCR 142\n2 Gravity Mountain SFA 74\n\nEnergy: 11\n11 Basic Lightning Energy SVE 4`
   },
   {
     name: 'Raging Bolt ex',
@@ -26,10 +26,10 @@ export const fallbackMetaDecks: MetaDeck[] = [
     description: 'Um dos decks mais rápidos e explosivos do formato Standard. Bate dano infinito descartando energias ligadas aos seus Pokémons com o ataque Bellowing Thunder, suportado pela aceleração de energia e compra do Teal Mask Ogerpon ex.',
     cards: [
       { name: 'Raging Bolt ex (TEF 123)', count: 4 },
-      { name: 'Teal Mask Ogerpon ex (TWM 25)', count: 4 },
+      { name: 'Teal Mask Ogerpon ex (TWM 025)', count: 4 },
       { name: "Professor Sada's Vitality (PAR 170)", count: 4 }
     ],
-    rawList: `Pokémon: 12\n4 Raging Bolt ex TEF 123\n4 Teal Mask Ogerpon ex TWM 25\n1 Radiant Greninja ASR 46\n1 Fezandipiti ex TWM 96\n1 Flutter Mane TEF 78\n1 Sandy Shocks ex PAR 108\n\nTrainer: 35\n4 Professor Sada's Vitality PAR 170\n2 Iono PAF 80\n1 Boss's Orders PAL 172\n4 Earthen Vessel PAR 163\n4 Nest Ball SVI 181\n4 Ultra Ball SVI 196\n3 Pokégear 3.0 SVI 186\n2 Energy Switch SVI 173\n2 Bravery Charm PAL 173\n1 Prime Catcher TEF 157\n1 Superior Energy Retrieval PAL 189\n1 Super Rod PAL 188\n1 Lost Vacuum LOR 162\n1 Pal Pad SVI 182\n1 Night Stretcher SFA 61\n1 Squawkabilly ex PAF 75\n4 Pokeball SVI 196\n\nEnergy: 13\n6 Basic Grass Energy SVE 1\n4 Basic Lightning Energy SVE 4\n3 Basic Fighting Energy SVE 6`
+    rawList: `Pokémon: 12\n4 Raging Bolt ex TEF 123\n4 Teal Mask Ogerpon ex TWM 25\n1 Radiant Greninja ASR 46\n1 Fezandipiti ex TWM 96\n1 Flutter Mane TEF 78\n1 Squawkabilly ex PAF 75\n\nTrainer: 35\n4 Professor Sada's Vitality PAR 170\n2 Iono PAF 80\n2 Boss's Orders PAL 172\n4 Earthen Vessel PAR 163\n4 Nest Ball SVI 181\n4 Ultra Ball SVI 196\n3 Pokégear 3.0 SVI 186\n2 Energy Switch SVI 173\n2 Bravery Charm PAL 173\n1 Prime Catcher TEF 157\n2 Super Rod PAL 188\n1 Pokestop OBF 150\n\nEnergy: 13\n6 Basic Grass Energy SVE 1\n4 Basic Lightning Energy SVE 4\n3 Basic Fighting Energy SVE 6`
   },
   {
     name: 'Regidrago VSTAR',
@@ -41,10 +41,10 @@ export const fallbackMetaDecks: MetaDeck[] = [
     description: 'O deck de Dragão supremo no Standard format. Usa o ataque Apex Dragon do Regidrago VSTAR para copiar habilidades de outros Pokémon dragão da pilha de descarte (como Giratina VSTAR ou Noivern ex), energizado de forma ultrarrápida com Teal Mask Ogerpon ex.',
     cards: [
       { name: 'Regidrago VSTAR (SIT 136)', count: 3 },
-      { name: 'Teal Mask Ogerpon ex (TWM 25)', count: 4 },
+      { name: 'Teal Mask Ogerpon ex (TWM 025)', count: 3 },
       { name: 'Energy Switch (SVI 173)', count: 4 }
     ],
-    rawList: `Pokémon: 17\n3 Regidrago V SIT 135\n3 Regidrago VSTAR SIT 136\n3 Teal Mask Ogerpon ex TWM 25\n1 Giratina VSTAR LOR 131\n1 Noivern ex PAF 69\n1 Haxorus TWM 156\n1 Dragapult ex TWM 130\n1 Kyurem SFA 47\n1 Mew ex MEW 151\n1 Radiant Charizard PGO 11\n1 Fezandipiti ex TWM 96\n\nTrainer: 31\n4 Professor Sada's Vitality PAR 170\n3 Iono PAF 80\n2 Boss's Orders PAL 172\n4 Ultra Ball SVI 196\n4 Nest Ball SVI 181\n4 Energy Switch SVI 173\n4 Earthen Vessel PAR 163\n2 Super Rod PAL 188\n1 Superior Energy Retrieval PAL 189\n1 Prime Catcher TEF 157\n1 Pokégear 3.0 SVI 186\n1 Lost Vacuum LOR 162\n\nEnergy: 12\n6 Basic Grass Energy SVE 1\n3 Basic Fire Energy SVE 2\n3 Basic Psychic Energy SVE 13`
+    rawList: `Pokémon: 17\n3 Regidrago V SIT 135\n3 Regidrago VSTAR SIT 136\n3 Teal Mask Ogerpon ex TWM 25\n1 Giratina VSTAR LOR 131\n1 Noivern ex PAF 69\n1 Dragapult ex TWM 130\n1 Kyurem SFA 47\n1 Mew ex MEW 151\n1 Radiant Charizard PGO 11\n1 Fezandipiti ex TWM 96\n1 Squawkabilly ex PAF 75\n\nTrainer: 31\n4 Professor Sada's Vitality PAR 170\n3 Iono PAF 80\n2 Boss's Orders PAL 172\n4 Ultra Ball SVI 196\n4 Nest Ball SVI 181\n4 Energy Switch SVI 173\n4 Earthen Vessel PAR 163\n2 Super Rod PAL 188\n1 Prime Catcher TEF 157\n\nEnergy: 12\n6 Basic Grass Energy SVE 1\n3 Basic Fire Energy SVE 2\n3 Basic Psychic Energy SVE 13`
   },
   {
     name: 'Charizard ex',
@@ -57,9 +57,9 @@ export const fallbackMetaDecks: MetaDeck[] = [
     cards: [
       { name: 'Charizard ex (OBF 125)', count: 3 },
       { name: 'Pidgeot ex (OBF 225)', count: 2 },
-      { name: 'Dusknoir (SFA 20)', count: 2 }
+      { name: 'Dusknoir (SFA 020)', count: 2 }
     ],
-    rawList: `Pokémon: 18\n3 Charizard ex OBF 125\n2 Pidgey MEW 16\n2 Pidgeot ex OBF 225\n3 Duskull SFA 18\n1 Dusclops SFA 19\n2 Dusknoir SFA 20\n2 Rotom V LOR 58\n1 Fezandipiti ex TWM 96\n1 Radiant Alakazam SIT 59\n2 Bouffalant SSP 145\n\nTrainer: 30\n4 Arven SVI 166\n3 Iono PAF 80\n2 Boss's Orders PAL 172\n4 Area Zero Underdepths SCR 131\n4 Buddy-Buddy Poffin TEF 144\n4 Nest Ball SVI 181\n4 Rare Candy SVI 191\n2 Super Rod PAL 188\n1 Prime Catcher TEF 157\n1 Counter Catcher PAR 160\n1 Defiance Band SVI 169\n\nEnergy: 12\n4 Double Turbo Energy BRS 151\n8 Basic Water Energy SVE 3`
+    rawList: `Pokémon: 18\n3 Charmander PAF 109\n1 Charmeleon PAF 110\n3 Charizard ex OBF 125\n2 Pidgey MEW 16\n2 Pidgeot ex OBF 225\n2 Duskull SFA 18\n1 Dusclops SFA 19\n2 Dusknoir SFA 20\n1 Rotom V LOR 58\n1 Fezandipiti ex TWM 96\n1 Radiant Charizard PGO 11\n\nTrainer: 36\n4 Arven SVI 166\n3 Iono PAF 80\n2 Boss's Orders PAL 172\n1 Professor's Research SVI 189\n1 Briar SCR 132\n4 Buddy-Buddy Poffin TEF 144\n4 Nest Ball SVI 181\n4 Ultra Ball SVI 196\n4 Rare Candy SVI 191\n2 Super Rod PAL 188\n1 Counter Catcher PAR 160\n1 Prime Catcher TEF 157\n1 Forest Seal Stone SIT 156\n4 Area Zero Underdepths SCR 131\n\nEnergy: 6\n6 Basic Fire Energy SVE 2`
   },
   {
     name: 'Lugia VSTAR',
@@ -74,7 +74,7 @@ export const fallbackMetaDecks: MetaDeck[] = [
       { name: 'Archeops (SIT 147)', count: 4 },
       { name: 'Cinccino (TEF 137)', count: 3 }
     ],
-    rawList: `Pokémon: 16\n3 Lugia V SIT 138\n3 Lugia VSTAR SIT 139\n4 Archeops SIT 147\n3 Minccino TEF 136\n3 Cinccino TEF 137\n\nTrainer: 28\n4 Professor's Research SVI 189\n3 Iono PAF 80\n2 Boss's Orders PAL 172\n4 Great Ball SVI 183\n4 Ultra Ball SVI 196\n4 Capturing Aroma SIT 153\n2 Super Rod PAL 188\n3 Collapsed Stadium BRS 137\n2 Jac SVI 175\n\nEnergy: 16\n4 Jet Energy PAL 190\n4 Double Turbo Energy BRS 151\n4 Gift Energy LOR 171\n4 Mist Energy TEF 161`
+    rawList: `Pokémon: 19\n3 Lugia V SIT 138\n3 Lugia VSTAR SIT 139\n4 Archeops SIT 147\n3 Minccino TEF 136\n3 Cinccino TEF 137\n1 Lumineon V BRS 40\n1 Iron Hands ex TEF 124\n1 Wellspring Mask Ogerpon ex TWM 64\n\nTrainer: 24\n3 Professor's Research SVI 189\n3 Iono PAF 80\n2 Boss's Orders PAL 172\n2 Carmine TWM 145\n4 Ultra Ball SVI 196\n4 Capturing Aroma SIT 153\n3 Great Ball SVI 183\n2 Super Rod PAL 188\n1 Collapsed Stadium BRS 137\n\nEnergy: 17\n4 Jet Energy PAL 190\n4 Double Turbo Energy BRS 151\n4 Gift Energy LOR 171\n4 Mist Energy TEF 161\n1 Legacy Energy TWM 167`
   },
   {
     name: 'Gardevoir ex',
@@ -89,6 +89,6 @@ export const fallbackMetaDecks: MetaDeck[] = [
       { name: 'Drifloon (SVI 089)', count: 2 },
       { name: 'Scream Tail (PAR 086)', count: 1 }
     ],
-    rawList: `Pokémon: 18\n3 Ralts SVI 84\n1 Ralts ASR 60\n3 Kirlia SIT 68\n2 Gardevoir ex SVI 86\n2 Drifloon SVI 89\n1 Scream Tail PAR 86\n1 Munkidori TWM 95\n1 Fezandipiti ex TWM 96\n2 Flutter Mane TEF 78\n2 Klefki SVI 96\n\nTrainer: 32\n4 Arven SVI 166\n3 Iono PAF 80\n2 Boss's Orders PAL 172\n1 Professor's Research SVI 189\n4 Buddy-Buddy Poffin TEF 144\n4 Nest Ball SVI 181\n4 Ultra Ball SVI 196\n3 Super Rod PAL 188\n2 Earthen Vessel PAR 163\n2 Bravery Charm PAL 173\n1 Counter Catcher PAR 160\n2 Technical Machine: Evolution PAR 178\n\nEnergy: 10\n10 Basic Psychic Energy SVE 13`
+    rawList: `Pokémon: 18\n4 Ralts SVI 84\n3 Kirlia SIT 68\n2 Gardevoir ex SVI 86\n2 Drifloon SVI 89\n1 Scream Tail PAR 86\n1 Munkidori TWM 95\n1 Fezandipiti ex TWM 96\n2 Flutter Mane TEF 78\n2 Klefki SVI 96\n\nTrainer: 32\n4 Arven SVI 166\n3 Iono PAF 80\n2 Boss's Orders PAL 172\n1 Professor's Research SVI 189\n4 Buddy-Buddy Poffin TEF 144\n4 Nest Ball SVI 181\n4 Ultra Ball SVI 196\n3 Super Rod PAL 188\n2 Earthen Vessel PAR 163\n2 Bravery Charm PAL 173\n1 Counter Catcher PAR 160\n2 Technical Machine: Evolution PAR 178\n\nEnergy: 10\n10 Basic Psychic Energy SVE 13`
   }
 ];

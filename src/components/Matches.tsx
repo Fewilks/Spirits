@@ -55,6 +55,11 @@ export default function Matches({ currentMember }: MatchesProps) {
   const [showFormModal, setShowFormModal] = useState(false);
   const [player1Id, setPlayer1Id] = useState(currentMember.id);
   const [player2Name, setPlayer2Name] = useState('');
+
+  // Keep player1Id updated when currentMember changes
+  useEffect(() => {
+    setPlayer1Id(currentMember.id);
+  }, [currentMember]);
   const [player2IsMember, setPlayer2IsMember] = useState(false);
   const [player2Id, setPlayer2Id] = useState('');
   const [deckName, setDeckName] = useState('');
@@ -563,19 +568,16 @@ export default function Matches({ currentMember }: MatchesProps) {
             {/* Form */}
             <form onSubmit={handleRegisterMatch} className="p-6 overflow-y-auto space-y-4 flex-1">
               
-              {/* Player 1 selection (Spirits member) */}
+              {/* Player 1 selection (Spirits member) - Locked to currentMember */}
               <div className="space-y-1.5">
                 <label className="block text-xs font-bold text-slate-300 uppercase">Representando Spirits (Jogador 1):</label>
-                <select
-                  id="p1-selector"
-                  value={player1Id}
-                  onChange={(e) => setPlayer1Id(e.target.value)}
-                  className="w-full p-2.5 bg-slate-950 border border-slate-850 focus:border-purple-500 rounded-lg text-white text-sm outline-none"
-                >
-                  {members.map(mem => (
-                    <option key={mem.id} value={mem.id}>{mem.name} ({mem.nickname || 'Sem apelido'})</option>
-                  ))}
-                </select>
+                <div className="p-3 bg-slate-950 border border-slate-850 rounded-lg text-white text-sm font-semibold flex items-center justify-between">
+                  <div className="flex items-center gap-2.5">
+                    <PokemonSprite name={currentMember.avatarSprite || 'substitute'} size="sm" className="w-5 h-5 scale-110" />
+                    <span>{currentMember.name} ({currentMember.nickname || 'Sem apelido'})</span>
+                  </div>
+                  <span className="text-[10px] uppercase font-black text-purple-400 bg-purple-950/50 px-2.5 py-0.5 rounded border border-purple-800/30 font-mono">Você</span>
+                </div>
               </div>
 
               {/* Player 2 selection */}
