@@ -382,13 +382,14 @@ app.get('/api/pokemon/meta', async (req, res) => {
 });
 
 // Helper function to split search queries into a name part and a card number part
-function parseSearchQuery(queryStr: string): { nameQuery: string; numberQuery: string } {
+function parseSearchQuery(queryStr: string): { nameQuery: string; numberQuery: string; printedTotalQuery: string } {
   let nameQuery = '';
   let numberQuery = '';
+  let printedTotalQuery = '';
 
   const trimmed = queryStr.trim();
   if (!trimmed) {
-    return { nameQuery, numberQuery };
+    return { nameQuery, numberQuery, printedTotalQuery };
   }
 
   // Split search query into space-separated tokens
@@ -401,6 +402,9 @@ function parseSearchQuery(queryStr: string): { nameQuery: string; numberQuery: s
       const parts = token.split('/');
       if (parts[0]) {
         numberQuery = parts[0].trim();
+      }
+      if (parts[1]) {
+        printedTotalQuery = parts[1].trim();
       }
     } 
     // Check if token is a card number (only digits, special prefixes, or digits with letter)
@@ -424,7 +428,7 @@ function parseSearchQuery(queryStr: string): { nameQuery: string; numberQuery: s
     }
   }
 
-  return { nameQuery, numberQuery };
+  return { nameQuery, numberQuery, printedTotalQuery };
 }
 
 // Search Pokémon cards via pokemontcg.io with local fallbacks and pagination support
@@ -436,7 +440,7 @@ app.get('/api/pokemon/search', async (req, res) => {
 
   try {
     let qString = '';
-    const { nameQuery, numberQuery } = parseSearchQuery(queryParam);
+    const { nameQuery, numberQuery, printedTotalQuery } = parseSearchQuery(queryParam);
     
     if (nameQuery) {
       qString += `name:"*${nameQuery}*"`;
@@ -445,12 +449,19 @@ app.get('/api/pokemon/search', async (req, res) => {
       if (qString) qString += ' ';
       qString += `number:"${numberQuery}"`;
     }
+    if (printedTotalQuery) {
+      const parsedTotal = parseInt(printedTotalQuery, 10);
+      if (!isNaN(parsedTotal)) {
+        if (qString) qString += ' ';
+        qString += `set.printedTotal:${parsedTotal}`;
+      }
+    }
     if (setParam) {
       if (qString) qString += ' ';
       qString += `set.id:${setParam}`;
     }
 
-    console.log(`Searching cards for parsed: name="${nameQuery}" number="${numberQuery}" set="${setParam}" page=${pageParam} pageSize=${pageSizeParam}`);
+    console.log(`Searching cards for parsed: name="${nameQuery}" number="${numberQuery}" printedTotal="${printedTotalQuery}" set="${setParam}" page=${pageParam} pageSize=${pageSizeParam}`);
     const encodedQuery = encodeURIComponent(qString);
     const url = qString 
       ? `https://api.pokemontcg.io/v2/cards?q=${encodedQuery}&page=${pageParam}&pageSize=${pageSizeParam}&orderBy=name`

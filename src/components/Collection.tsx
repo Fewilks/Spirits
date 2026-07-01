@@ -18,13 +18,14 @@ import {
 import PokemonSprite from './PokemonSprite';
 
 // Helper function to split search queries into a name part and a card number part
-function parseSearchQuery(queryStr: string): { nameQuery: string; numberQuery: string } {
+function parseSearchQuery(queryStr: string): { nameQuery: string; numberQuery: string; printedTotalQuery: string } {
   let nameQuery = '';
   let numberQuery = '';
+  let printedTotalQuery = '';
 
   const trimmed = queryStr.trim();
   if (!trimmed) {
-    return { nameQuery, numberQuery };
+    return { nameQuery, numberQuery, printedTotalQuery };
   }
 
   // Split search query into space-separated tokens
@@ -37,6 +38,9 @@ function parseSearchQuery(queryStr: string): { nameQuery: string; numberQuery: s
       const parts = token.split('/');
       if (parts[0]) {
         numberQuery = parts[0].trim();
+      }
+      if (parts[1]) {
+        printedTotalQuery = parts[1].trim();
       }
     } 
     // Check if token is a card number (only digits, special prefixes, or digits with letter)
@@ -60,7 +64,7 @@ function parseSearchQuery(queryStr: string): { nameQuery: string; numberQuery: s
     }
   }
 
-  return { nameQuery, numberQuery };
+  return { nameQuery, numberQuery, printedTotalQuery };
 }
 
 interface CollectionProps {
@@ -200,13 +204,20 @@ export default function Collection({ currentMember }: CollectionProps) {
       // Se estiver em static hosting ou se o nosso servidor der erro, faz fetch direto na API Oficial do Pokemon TCG!
       if (!fetchedData) {
         let qString = '';
-        const { nameQuery, numberQuery } = parseSearchQuery(searchQuery);
+        const { nameQuery, numberQuery, printedTotalQuery } = parseSearchQuery(searchQuery);
         if (nameQuery) {
           qString += `name:"*${nameQuery}*"`;
         }
         if (numberQuery) {
           if (qString) qString += ' ';
           qString += `number:"${numberQuery}"`;
+        }
+        if (printedTotalQuery) {
+          const parsedTotal = parseInt(printedTotalQuery, 10);
+          if (!isNaN(parsedTotal)) {
+            if (qString) qString += ' ';
+            qString += `set.printedTotal:${parsedTotal}`;
+          }
         }
         if (selectedSet) {
           if (qString) qString += ' ';
