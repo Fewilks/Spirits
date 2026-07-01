@@ -94,6 +94,42 @@ function formatLimitlessDecklist(decklist: any): string {
   return listStr.trim();
 }
 
+function getDeckSprites(deck: any): string[] {
+  const archetype = deck.archetype || deck.name || '';
+  const fromArchetype = getArchetypeSprites(archetype);
+  
+  if (fromArchetype.length >= 2) {
+    return fromArchetype.slice(0, 2);
+  }
+  
+  const pokemonList: string[] = [...fromArchetype];
+  
+  if (deck.cards && Array.isArray(deck.cards)) {
+    const pokemonFromCards = deck.cards
+      .map((c: any) => {
+        let pName = c.name.split('(')[0].trim().toLowerCase();
+        if (pName.startsWith('mega ')) pName = pName.substring(5).trim();
+        else if (pName.startsWith('mega-')) pName = pName.substring(5).trim();
+        pName = pName.replace(/\b(ex|vstar|vmax|v|gmax|tera|prime|baby|deck)\b/gi, '').trim();
+        return pName;
+      })
+      .filter((pName: string) => pName && pName.length > 0 && pName !== 'substitute');
+      
+    for (const pName of pokemonFromCards) {
+      if (pokemonList.length >= 2) break;
+      if (!pokemonList.includes(pName)) {
+        pokemonList.push(pName);
+      }
+    }
+  }
+  
+  while (pokemonList.length < 2) {
+    pokemonList.push('substitute');
+  }
+  
+  return pokemonList.slice(0, 2);
+}
+
 interface DashboardProps {
   currentMember: Member;
   setActiveTab: (tab: string) => void;
@@ -638,12 +674,18 @@ export default function Dashboard({ currentMember, setActiveTab }: DashboardProp
             <div className="space-y-3">
               {metaDecks.map((deck, idx) => (
                 <div key={`${deck.name}-${idx}`} className="flex gap-3 bg-slate-950/30 p-3 rounded-xl border border-slate-850 hover:border-purple-500/10 transition-all">
-                  <img 
-                    src={deck.imageUrl} 
-                    alt={deck.name} 
-                    className="w-10 h-14 object-contain rounded shrink-0 drop-shadow-md" 
-                    onError={(e) => { e.currentTarget.src = 'https://images.pokemontcg.io/base1/99.png'; }}
-                  />
+                  <div className="w-14 h-14 bg-slate-950/50 rounded-xl border border-slate-850 flex items-center justify-center shrink-0 relative overflow-hidden shadow-inner">
+                    <div className="flex -space-x-3">
+                      {getDeckSprites(deck).map((spriteName, sIdx) => (
+                        <div 
+                          key={sIdx} 
+                          className="w-9 h-9 rounded-lg bg-slate-900 border border-slate-800/80 flex items-center justify-center shadow-lg relative z-10"
+                        >
+                          <PokemonSprite name={spriteName} size="sm" className="w-8 h-8 scale-110" isStatic={true} />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex justify-between items-start gap-1">
                       <span className="text-white font-extrabold text-xs truncate">{deck.name}</span>

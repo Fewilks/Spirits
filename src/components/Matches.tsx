@@ -29,7 +29,18 @@ export function getArchetypeSprites(archetype: string): string[] {
       let name = p.trim().toLowerCase();
       // Remove typical suffixes
       name = name.replace(/\b(ex|vstar|vmax|v|gmax|tera|prime|baby|deck)\b/gi, '');
-      return name.trim();
+      name = name.trim();
+      
+      // Ignore "mega" prefix
+      if (name.startsWith('mega ')) {
+        name = name.substring(5).trim();
+      } else if (name.startsWith('mega-')) {
+        name = name.substring(5).trim();
+      } else {
+        name = name.replace(/\bmega\b/gi, '').trim();
+      }
+      
+      return name;
     })
     .filter(name => name.length > 0);
   
