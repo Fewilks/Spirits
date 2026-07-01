@@ -59,15 +59,60 @@ const fallbackCards = [
   { id: 'sv5-137', name: 'Cinccino', imageUrl: 'https://images.pokemontcg.io/sv5/137.png', setCode: 'sv5', setName: 'Temporal Forces', setNumber: '137' }
 ];
 
+// Helper to map set codes to pokemontcg.io IDs
+function mapSetCodeToTcgIo(setCode: string): string {
+  const s = (setCode || '').toLowerCase();
+  const maps: Record<string, string> = {
+    ssp: 'sv8',
+    scr: 'sv7',
+    sfa: 'sv6a',
+    twm: 'sv6',
+    tef: 'sv5',
+    saf: 'sv5a',
+    paf: 'sv4a',
+    sv8a: 'sv8a',
+    par: 'sv4',
+    obf: 'sv3',
+    pal: 'sv2',
+    svi: 'sv1',
+    sve: 'sve',
+    sv1: 'sv1',
+    sv2: 'sv2',
+    sv3: 'sv3',
+    sv4: 'sv4',
+    sv5: 'sv5',
+    sv6: 'sv6',
+    sv7: 'sv7',
+    sv8: 'sv8',
+    sit: 'sit',
+    lor: 'lor',
+    pgo: 'pgo',
+    asr: 'asr',
+    brs: 'brs',
+    fus: 'fus',
+    cel: 'cel',
+    cre: 'cre',
+    bst: 'bst',
+    shf: 'shf',
+    viv: 'viv',
+    daa: 'daa',
+    rca: 'rca',
+    ssh: 'ssh'
+  };
+  return maps[s] || s;
+}
+
 // Helper to look up an image link or search pokemontcg.io
 async function findCardInTcgio(name: string, set?: string, number?: string): Promise<{ id: string; name: string; imageUrl: string; setCode: string; setName: string; setNumber: string } | null> {
   try {
     let queryStr = `name:"${name}"`;
     if (set && set.length > 1) {
-      queryStr += ` set.id:${set.toLowerCase()}`;
+      const mappedSet = mapSetCodeToTcgIo(set);
+      queryStr += ` set.id:${mappedSet.toLowerCase()}`;
     }
-    if (number) {
-      queryStr += ` number:${number}`;
+    const cleanNumber = number ? number.trim().replace(/^0+/, '') : undefined;
+    if (cleanNumber) {
+      queryStr += ` number:${cleanNumber}`;
     }
 
     const encodedQuery = encodeURIComponent(queryStr);
@@ -187,44 +232,6 @@ async function fetchMetaFromLimitless(): Promise<any[]> {
 }
 
 // REST APIs
-function mapSetCodeToTcgIo(set: string): string {
-  const s = (set || '').toLowerCase();
-  const maps: Record<string, string> = {
-    ssp: 'sv8',
-    scr: 'sv7',
-    sfa: 'sv6a',
-    twm: 'sv6',
-    tef: 'sv5',
-    saf: 'sv5a',
-    paf: 'sv4a',
-    par: 'sv4',
-    obf: 'sv3',
-    sv1: 'sv1',
-    sv2: 'sv2',
-    sv3: 'sv3',
-    sv4: 'sv4',
-    sv5: 'sv5',
-    sv6: 'sv6',
-    sv7: 'sv7',
-    sv8: 'sv8',
-    sit: 'sit',
-    lor: 'lor',
-    pgo: 'pgo',
-    asr: 'asr',
-    brs: 'brs',
-    fus: 'fus',
-    cel: 'cel',
-    cre: 'cre',
-    bst: 'bst',
-    shf: 'shf',
-    viv: 'viv',
-    daa: 'daa',
-    rca: 'rca',
-    ssh: 'ssh'
-  };
-  return maps[s] || s;
-}
-
 function formatLimitlessDecklist(decklist: any): string {
   let listStr = '';
   
@@ -469,7 +476,9 @@ ${deckText}
       for (const card of parsedJson) {
         // Try looking up in fallback cards
         const localCard = fallbackCards.find(c => c.name.toLowerCase() === card.name.toLowerCase());
-        let imageUrl = localCard ? localCard.imageUrl : `https://images.pokemontcg.io/${card.set ? card.set.toLowerCase() : 'sv1'}/${card.number || '1'}.png`;
+        const mappedSet = card.set ? mapSetCodeToTcgIo(card.set) : 'sv1';
+        const cleanNumber = card.number ? card.number.trim().replace(/^0+/, '') : '1';
+        let imageUrl = localCard ? localCard.imageUrl : `https://images.pokemontcg.io/${mappedSet.toLowerCase()}/${cleanNumber}.png`;
         
         // Let's do a quick lazy fetch from tcgio for Pokémons to get high-quality images
         if (card.type === 'Pokémon' && !localCard) {
@@ -530,7 +539,9 @@ ${deckText}
 
         // Try mapping to fallback
         const localCard = fallbackCards.find(c => c.name.toLowerCase().includes(cleanName.toLowerCase()));
-        const imageUrl = localCard ? localCard.imageUrl : `https://images.pokemontcg.io/${set ? set.toLowerCase() : 'sv1'}/${number || '1'}.png`;
+        const mappedSet = set ? mapSetCodeToTcgIo(set) : 'sv1';
+        const cleanNumber = number ? number.trim().replace(/^0+/, '') : '1';
+        const imageUrl = localCard ? localCard.imageUrl : `https://images.pokemontcg.io/${mappedSet.toLowerCase()}/${cleanNumber}.png`;
 
         cards.push({
           name: cleanName,

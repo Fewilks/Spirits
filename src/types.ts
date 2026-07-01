@@ -58,6 +58,7 @@ export interface MatchRecord {
   deckName: string;
   deckArchetype: string;
   opponentDeck: string;
+  opponentArchetype?: string;
   format: 'MD1' | 'MD3' | 'MD5';
   result: 'win' | 'loss' | 'draw';
   score: string; // e.g. "2-1", "1-0"

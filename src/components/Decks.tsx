@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import PokemonSprite from './PokemonSprite';
 import { fallbackMetaDecks } from '../data/fallbackDecks';
+import { getArchetypeSprites } from './Matches';
 
 interface DecksProps {
   currentMember: Member;
@@ -39,26 +40,12 @@ export default function Decks({ currentMember }: DecksProps) {
   const [showImportModal, setShowImportModal] = useState(false);
   const [rawText, setRawText] = useState('');
   const [deckName, setDeckName] = useState('');
-  const [archetype, setArchetype] = useState('Pikachu ex');
+  const [deckPokemon1, setDeckPokemon1] = useState('charizard');
+  const [deckPokemon2, setDeckPokemon2] = useState('');
   const [parsing, setParsing] = useState(false);
 
   // Active Deck Detail view
   const [activeDeck, setActiveDeck] = useState<DeckRecord | null>(null);
-
-  const archetypes = [
-    'Pikachu ex',
-    'Raging Bolt ex',
-    'Terapagos ex',
-    'Ceruledge ex',
-    'Dragapult ex',
-    'Archaludon ex',
-    'Roaring Moon ex',
-    'Outro'
-  ];
-
-  const dynamicArchetypes = metaDecks.length > 0 
-    ? [...new Set([...metaDecks.map(d => d.name), 'Outro'])]
-    : archetypes;
 
   // Helper to map set codes to pokemontcg.io IDs
   function mapSetCodeToTcgIo(setCode: string): string {
@@ -71,8 +58,12 @@ export default function Decks({ currentMember }: DecksProps) {
       tef: 'sv5',
       saf: 'sv5a',
       paf: 'sv4a',
+      sv8a: 'sv8a',
       par: 'sv4',
       obf: 'sv3',
+      pal: 'sv2',
+      svi: 'sv1',
+      sve: 'sve',
       sv1: 'sv1',
       sv2: 'sv2',
       sv3: 'sv3',
@@ -119,7 +110,7 @@ export default function Decks({ currentMember }: DecksProps) {
         const count = parseInt(match[1], 10);
         const name = match[2].trim();
         const set = match[3].toUpperCase();
-        const number = match[4].padStart(3, '0'); // garante formato com 3 dígitos
+        const number = match[4].replace(/^0+/, ''); // remove any leading zeros to match pokemontcg.io format
         const mappedSet = mapSetCodeToTcgIo(set);
         const imageUrl = `https://images.pokemontcg.io/${mappedSet}/${number}.png`;
         
@@ -177,7 +168,7 @@ export default function Decks({ currentMember }: DecksProps) {
                                 (!window.location.hostname.includes('localhost') && !window.location.hostname.includes('run.app'));
         
         // Em produção (GitHub Pages) pula a API e usa dados locais
-        if (import.meta.env.PROD || isStaticHosting) {
+        if (isStaticHosting) {
           const sortedFallback = [...fallbackMetaDecks].sort((a: any, b: any) => {
             const dateA = a.updatedAt || '2023-01-01';
             const dateB = b.updatedAt || '2023-01-01';
@@ -244,7 +235,7 @@ export default function Decks({ currentMember }: DecksProps) {
                               (!window.location.hostname.includes('localhost') && !window.location.hostname.includes('run.app'));
       
       let parsedCards: ParsedDeckCard[];
-      if (import.meta.env.PROD || isStaticHosting) {
+      if (isStaticHosting) {
         // Usa parser local em produção
         parsedCards = parseDeckLocally(metaDeck.rawList);
         if (parsedCards.length === 0) throw new Error('Falha no parser local');
@@ -299,7 +290,7 @@ export default function Decks({ currentMember }: DecksProps) {
                               (!window.location.hostname.includes('localhost') && !window.location.hostname.includes('run.app'));
       
       let parsedCards: ParsedDeckCard[];
-      if (import.meta.env.PROD || isStaticHosting) {
+      if (isStaticHosting) {
         // Usa parser local em produção
         parsedCards = parseDeckLocally(rawText);
         if (parsedCards.length === 0) {
@@ -318,11 +309,15 @@ export default function Decks({ currentMember }: DecksProps) {
         parsedCards = await res.json();
       }
       
+      const deckArchetype = deckPokemon2.trim() 
+        ? `${deckPokemon1.trim().toLowerCase()} / ${deckPokemon2.trim().toLowerCase()}` 
+        : deckPokemon1.trim().toLowerCase();
+      
       const newDeck: Omit<DeckRecord, 'id'> = {
         userId: currentMember.id,
         userName: currentMember.name,
         deckName: deckName,
-        archetype: archetype,
+        archetype: deckArchetype,
         rawList: rawText,
         parsedCards: parsedCards,
         createdAt: new Date().toISOString()
@@ -334,6 +329,8 @@ export default function Decks({ currentMember }: DecksProps) {
       setShowImportModal(false);
       setRawText('');
       setDeckName('');
+      setDeckPokemon1('charizard');
+      setDeckPokemon2('');
       alert('Deck analisado e cadastrado com sucesso!');
     } catch (err) {
       console.error('Error importing deck:', err);
@@ -463,7 +460,13 @@ export default function Decks({ currentMember }: DecksProps) {
                     id={`deck-item-${deck.id}`}
                   >
                     <div className="min-w-0 flex items-center gap-3">
-                      <PokemonSprite name={deck.archetype} size="sm" />
+                      <div className="flex -space-x-2 shrink-0">
+                        {getArchetypeSprites(deck.archetype).map((spriteName, idx) => (
+                          <div key={idx} className="w-8 h-8 rounded-lg bg-slate-950 border border-slate-800 flex items-center justify-center overflow-hidden shadow-md">
+                            <PokemonSprite name={spriteName} size="sm" className="w-6 h-6 scale-110" />
+                          </div>
+                        ))}
+                      </div>
                       <div className="min-w-0">
                         <h3 className="text-white font-extrabold text-sm truncate" title={deck.deckName}>{deck.deckName}</h3>
                         <div className="flex items-center gap-1.5 mt-1 text-[11px] text-slate-400">
@@ -507,7 +510,13 @@ export default function Decks({ currentMember }: DecksProps) {
                   {/* Header info sheet */}
                   <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-slate-850 pb-5">
                     <div className="flex items-center gap-4">
-                      <PokemonSprite name={activeDeck.archetype} size="md" />
+                      <div className="flex -space-x-3 shrink-0">
+                        {getArchetypeSprites(activeDeck.archetype).map((spriteName, idx) => (
+                          <div key={idx} className="w-12 h-12 rounded-xl bg-slate-950 border border-slate-800 flex items-center justify-center overflow-hidden shadow-lg">
+                            <PokemonSprite name={spriteName} size="md" className="w-9 h-9 scale-110" />
+                          </div>
+                        ))}
+                      </div>
                       <div>
                         <span className="text-[10px] font-mono font-bold text-purple-400 uppercase">Arquétipo: {activeDeck.archetype}</span>
                         <h2 className="text-xl font-extrabold text-white mt-0.5">{activeDeck.deckName}</h2>
@@ -835,18 +844,45 @@ export default function Decks({ currentMember }: DecksProps) {
                 />
               </div>
 
-              <div className="space-y-1.5">
-                <label className="block text-xs font-bold text-slate-300 uppercase">Arquétipo correspondente:</label>
-                <select
-                  id="import-deck-archetype"
-                  value={archetype}
-                  onChange={(e) => setArchetype(e.target.value)}
-                  className="w-full p-2.5 bg-slate-950 border border-slate-850 focus:border-purple-500 rounded-lg text-white text-sm outline-none"
-                >
-                  {dynamicArchetypes.map(a => (
-                    <option key={a} value={a}>{a}</option>
-                  ))}
-                </select>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <label className="block text-xs font-bold text-slate-300 uppercase">Pokémon Destaque 1 (Ícone):</label>
+                  <div className="relative">
+                    <input
+                      id="import-deck-pokemon1"
+                      type="text"
+                      placeholder="Ex: charizard, pikachu, lugia"
+                      value={deckPokemon1}
+                      onChange={(e) => setDeckPokemon1(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''))}
+                      className="w-full p-2.5 pl-9 bg-slate-950 border border-slate-850 focus:border-purple-500 rounded-lg text-white text-sm outline-none font-semibold"
+                      required
+                    />
+                    <div className="absolute left-2.5 top-1/2 -translate-y-1/2 flex items-center justify-center">
+                      <PokemonSprite name={deckPokemon1 || 'substitute'} size="sm" className="w-5 h-5 scale-125" />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="block text-xs font-bold text-slate-300 uppercase">Pokémon Destaque 2 (Opcional):</label>
+                  <div className="relative">
+                    <input
+                      id="import-deck-pokemon2"
+                      type="text"
+                      placeholder="Ex: dragapult, pidgeot, ogerpon"
+                      value={deckPokemon2}
+                      onChange={(e) => setDeckPokemon2(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''))}
+                      className="w-full p-2.5 pl-9 bg-slate-950 border border-slate-850 focus:border-purple-500 rounded-lg text-white text-sm outline-none font-semibold"
+                    />
+                    <div className="absolute left-2.5 top-1/2 -translate-y-1/2 flex items-center justify-center">
+                      {deckPokemon2 ? (
+                        <PokemonSprite name={deckPokemon2} size="sm" className="w-5 h-5 scale-125" />
+                      ) : (
+                        <div className="w-4 h-4 rounded-full border border-dashed border-slate-700" />
+                      )}
+                    </div>
+                  </div>
+                </div>
               </div>
 
               {/* Paste box */}

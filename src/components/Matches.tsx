@@ -68,6 +68,8 @@ export default function Matches({ currentMember }: MatchesProps) {
   const [deckPokemon2, setDeckPokemon2] = useState('');
   const [selectedDeckId, setSelectedDeckId] = useState<string>('');
   const [opponentDeck, setOpponentDeck] = useState('');
+  const [opponentPokemon1, setOpponentPokemon1] = useState('charizard');
+  const [opponentPokemon2, setOpponentPokemon2] = useState('');
   const [format, setFormat] = useState<'MD1' | 'MD3' | 'MD5'>('MD3');
   const [result, setResult] = useState<'win' | 'loss' | 'draw'>('win');
   const [score, setScore] = useState('2-1');
@@ -221,8 +223,8 @@ export default function Matches({ currentMember }: MatchesProps) {
       alert('Por favor, insira pelo menos o primeiro Pokémon em destaque!');
       return;
     }
-    if (!opponentDeck.trim()) {
-      alert('Por favor, insira o deck do oponente!');
+    if (!opponentPokemon1.trim()) {
+      alert('Por favor, insira pelo menos o primeiro Pokémon em destaque do oponente!');
       return;
     }
 
@@ -232,7 +234,13 @@ export default function Matches({ currentMember }: MatchesProps) {
       const p1Member = members.find(m => m.id === player1Id) || currentMember;
       const computedArchetype = (selectedDeckId !== 'custom' && selectedDeckId !== '')
         ? deckArchetype
-        : (deckPokemon2.trim() ? `${deckPokemon1.trim()} + ${deckPokemon2.trim()}` : deckPokemon1.trim() || 'Desconhecido');
+        : (deckPokemon2.trim() ? `${deckPokemon1.trim().toLowerCase()} / ${deckPokemon2.trim().toLowerCase()}` : deckPokemon1.trim().toLowerCase() || 'desconhecido');
+
+      const computedOpponentArchetype = opponentPokemon2.trim()
+        ? `${opponentPokemon1.trim().toLowerCase()} / ${opponentPokemon2.trim().toLowerCase()}`
+        : opponentPokemon1.trim().toLowerCase();
+
+      const computedOpponentDeck = opponentDeck.trim() || computedOpponentArchetype;
 
       const newMatch: Omit<MatchRecord, 'id'> = {
         player1Id: player1Id,
@@ -243,7 +251,8 @@ export default function Matches({ currentMember }: MatchesProps) {
         player2Id: (player2IsMember && player2Id) ? player2Id : '',
         deckName: deckName.trim(),
         deckArchetype: computedArchetype,
-        opponentDeck: opponentDeck.trim(),
+        opponentDeck: computedOpponentDeck,
+        opponentArchetype: computedOpponentArchetype,
         format: format,
         result: result,
         score: score.trim(),
@@ -298,6 +307,8 @@ export default function Matches({ currentMember }: MatchesProps) {
       setDeckPokemon1('charizard');
       setDeckPokemon2('');
       setOpponentDeck('');
+      setOpponentPokemon1('charizard');
+      setOpponentPokemon2('');
       setNotes('');
       alert('Partida registrada com sucesso! O ranking do time foi atualizado.');
     } catch (err) {
@@ -492,11 +503,11 @@ export default function Matches({ currentMember }: MatchesProps) {
                     <div className="min-w-0">
                       <div className="text-[9px] text-slate-550 uppercase font-bold">Deck Oponente</div>
                       <div className="text-xs font-bold text-slate-200 truncate" title={match.opponentDeck}>{match.opponentDeck}</div>
-                      <div className="text-[10px] text-slate-400 truncate">{match.opponentDeck}</div>
+                      <div className="text-[10px] text-slate-400 truncate capitalize">{match.opponentArchetype || match.opponentDeck}</div>
                     </div>
                     {/* Opponent Archetype Icons */}
                     <div className="flex -space-x-2 shrink-0">
-                      {getArchetypeSprites(match.opponentDeck).map((spriteName, idx) => (
+                      {getArchetypeSprites(match.opponentArchetype || match.opponentDeck).map((spriteName, idx) => (
                         <div key={idx} className="w-7 h-7 rounded-lg bg-slate-900 border border-slate-850 flex items-center justify-center overflow-hidden shadow-md">
                           <PokemonSprite name={spriteName} size="sm" className="w-5.5 h-5.5 scale-110" />
                         </div>
@@ -738,17 +749,64 @@ export default function Matches({ currentMember }: MatchesProps) {
                 )}
               </div>
 
-              <div className="space-y-1.5">
-                <label className="block text-xs font-bold text-slate-300 uppercase">Deck do Oponente (O que ele jogou?):</label>
-                <input
-                  id="p2-deck-input"
-                  type="text"
-                  placeholder="ex: Raging Bolt ex ou Regidrago"
-                  value={opponentDeck}
-                  onChange={(e) => setOpponentDeck(e.target.value)}
-                  className="w-full p-2.5 bg-slate-950 border border-slate-850 focus:border-purple-500 rounded-lg text-white text-sm outline-none"
-                  required
-                />
+              {/* Opponent Deck Section */}
+              <div className="bg-slate-950/40 p-4 rounded-xl border border-slate-850 space-y-4">
+                <div className="flex items-center justify-between border-b border-slate-900 pb-2">
+                  <span className="text-xs font-extrabold text-purple-400 uppercase tracking-wider">Deck do Oponente</span>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <label className="block text-xs font-bold text-slate-300 uppercase">Pokémon Destaque 1 (Ícone):</label>
+                    <div className="relative">
+                      <input
+                        id="p2-pokemon1-input"
+                        type="text"
+                        placeholder="Ex: raging-bolt, pikachu"
+                        value={opponentPokemon1}
+                        onChange={(e) => setOpponentPokemon1(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''))}
+                        className="w-full p-2.5 pl-9 bg-slate-950 border border-slate-850 focus:border-purple-500 rounded-lg text-white text-sm outline-none font-semibold"
+                        required
+                      />
+                      <div className="absolute left-2.5 top-1/2 -translate-y-1/2 flex items-center justify-center">
+                        <PokemonSprite name={opponentPokemon1 || 'substitute'} size="sm" className="w-5 h-5 scale-125" />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="block text-xs font-bold text-slate-300 uppercase">Pokémon Destaque 2 (Opcional):</label>
+                    <div className="relative">
+                      <input
+                        id="p2-pokemon2-input"
+                        type="text"
+                        placeholder="Ex: ogerpon, pidgeot"
+                        value={opponentPokemon2}
+                        onChange={(e) => setOpponentPokemon2(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''))}
+                        className="w-full p-2.5 pl-9 bg-slate-950 border border-slate-850 focus:border-purple-500 rounded-lg text-white text-sm outline-none font-semibold"
+                      />
+                      <div className="absolute left-2.5 top-1/2 -translate-y-1/2 flex items-center justify-center">
+                        {opponentPokemon2 ? (
+                          <PokemonSprite name={opponentPokemon2} size="sm" className="w-5 h-5 scale-125" />
+                        ) : (
+                          <div className="w-4 h-4 rounded-full border border-dashed border-slate-700" />
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="block text-xs font-bold text-slate-300 uppercase">Nome / Arquétipo do Deck (Opcional):</label>
+                  <input
+                    id="p2-deck-input"
+                    type="text"
+                    placeholder="ex: Raging Bolt ex (Deixe vazio para usar os destaques)"
+                    value={opponentDeck}
+                    onChange={(e) => setOpponentDeck(e.target.value)}
+                    className="w-full p-2.5 bg-slate-950 border border-slate-850 focus:border-purple-500 rounded-lg text-white text-sm outline-none font-semibold"
+                  />
+                </div>
               </div>
 
               {/* Format, Result, Score */}

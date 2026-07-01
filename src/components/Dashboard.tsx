@@ -128,7 +128,7 @@ export default function Dashboard({ currentMember, setActiveTab }: DashboardProp
           const isStaticHosting = window.location.hostname.includes('github.io') || 
                                   (!window.location.hostname.includes('localhost') && !window.location.hostname.includes('run.app'));
                                   
-          if (import.meta.env.PROD || isStaticHosting) {
+          if (isStaticHosting) {
             // GitHub Pages: dados locais
             const sortedFallback = [...fallbackMetaDecks].sort((a: any, b: any) => {
               const dateA = a.updatedAt || '2023-01-01';
@@ -417,10 +417,10 @@ export default function Dashboard({ currentMember, setActiveTab }: DashboardProp
                         </div>
                         <div className="text-xs text-slate-400 flex items-center gap-1.5 mt-0.5 flex-wrap">
                           vs <span className="text-slate-300 font-semibold">{match.player2Name}</span>
-                          <span className="text-[10px] bg-slate-900/80 px-1.5 py-0.5 rounded font-mono text-slate-500">({match.opponentDeck})</span>
+                          <span className="text-[10px] bg-slate-900/80 px-1.5 py-0.5 rounded font-mono text-slate-500 capitalize">({match.opponentArchetype || match.opponentDeck})</span>
                           {/* Opponent Highlighted icons */}
-                          <div className="flex -space-x-1.5">
-                            {getArchetypeSprites(match.opponentDeck).map((spriteName, idx) => (
+                          <div className="flex -space-x-1.5 font-semibold">
+                            {getArchetypeSprites(match.opponentArchetype || match.opponentDeck).map((spriteName, idx) => (
                               <div key={idx} className="w-5.5 h-5.5 rounded-md bg-slate-900 border border-slate-800 flex items-center justify-center overflow-hidden shadow">
                                 <PokemonSprite name={spriteName} size="sm" className="w-4 h-4 scale-110" />
                               </div>
