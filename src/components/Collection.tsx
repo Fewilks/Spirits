@@ -17,6 +17,52 @@ import {
 } from 'lucide-react';
 import PokemonSprite from './PokemonSprite';
 
+// Helper function to split search queries into a name part and a card number part
+function parseSearchQuery(queryStr: string): { nameQuery: string; numberQuery: string } {
+  let nameQuery = '';
+  let numberQuery = '';
+
+  const trimmed = queryStr.trim();
+  if (!trimmed) {
+    return { nameQuery, numberQuery };
+  }
+
+  // Split search query into space-separated tokens
+  const tokens = trimmed.split(/\s+/);
+  const nameTokens: string[] = [];
+
+  for (const token of tokens) {
+    // Check if token matches a number/total pattern (e.g. "121/086")
+    if (token.includes('/')) {
+      const parts = token.split('/');
+      if (parts[0]) {
+        numberQuery = parts[0].trim();
+      }
+    } 
+    // Check if token is a card number (only digits, special prefixes, or digits with letter)
+    else if (
+      /^\d+$/.test(token) || 
+      /^(tg|gg|sv|promo|rc|swsh|sm|xy|bw|col|ul|ud|hs|pl|dp|ex|np)\d+$/i.test(token) || 
+      /^\d+[a-zA-Z]$/.test(token)
+    ) {
+      numberQuery = token;
+    } else {
+      nameTokens.push(token);
+    }
+  }
+
+  // If we have a number query, make the name search looser by using the first token (e.g. "Roxie" instead of "Roxie's Performance")
+  if (nameTokens.length > 0) {
+    if (numberQuery) {
+      nameQuery = nameTokens[0].replace(/'s$/i, '').replace(/[^a-zA-Z0-9áéíóúçñÁÉÍÓÚÇÑ]/g, '');
+    } else {
+      nameQuery = nameTokens.join(' ');
+    }
+  }
+
+  return { nameQuery, numberQuery };
+}
+
 interface CollectionProps {
   currentMember: Member;
 }
@@ -154,8 +200,13 @@ export default function Collection({ currentMember }: CollectionProps) {
       // Se estiver em static hosting ou se o nosso servidor der erro, faz fetch direto na API Oficial do Pokemon TCG!
       if (!fetchedData) {
         let qString = '';
-        if (searchQuery.trim()) {
-          qString += `name:"*${searchQuery.trim()}*"`;
+        const { nameQuery, numberQuery } = parseSearchQuery(searchQuery);
+        if (nameQuery) {
+          qString += `name:"*${nameQuery}*"`;
+        }
+        if (numberQuery) {
+          if (qString) qString += ' ';
+          qString += `number:"${numberQuery}"`;
         }
         if (selectedSet) {
           if (qString) qString += ' ';
@@ -545,7 +596,7 @@ export default function Collection({ currentMember }: CollectionProps) {
                   <input
                     id="modal-card-search-input"
                     type="text"
-                    placeholder="Busque cartas em inglês ou português"
+                    placeholder="Nome do Pokémon/Treinador e/ou número (ex: Roxie 121/086)"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     className="w-full pl-10 pr-4 py-2 bg-slate-900 border border-slate-800 focus:border-purple-500 rounded-lg text-white text-sm outline-none font-sans"
@@ -576,8 +627,8 @@ export default function Collection({ currentMember }: CollectionProps) {
                 </button>
               </form>
               <div className="text-[10px] text-slate-500 mt-2 flex items-center gap-1">
-                <Info className="w-3 h-3 text-purple-400 shrink-0" />
-                <span>Dados oficiais do Pokémon TCG. Sempre atualizado.</span>
+                <Info className="w-3.5 h-3.5 text-purple-450 shrink-0" />
+                <span>Dados oficiais do Pokémon TCG. <b>Dica:</b> você pode digitar apenas o nome do Pokémon/Treinador ou combinar com a numeração (ex: <i>Roxie 121/086</i> ou apenas <i>121/086</i>).</span>
               </div>
             </div>
 

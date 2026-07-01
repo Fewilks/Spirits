@@ -381,6 +381,52 @@ app.get('/api/pokemon/meta', async (req, res) => {
   }
 });
 
+// Helper function to split search queries into a name part and a card number part
+function parseSearchQuery(queryStr: string): { nameQuery: string; numberQuery: string } {
+  let nameQuery = '';
+  let numberQuery = '';
+
+  const trimmed = queryStr.trim();
+  if (!trimmed) {
+    return { nameQuery, numberQuery };
+  }
+
+  // Split search query into space-separated tokens
+  const tokens = trimmed.split(/\s+/);
+  const nameTokens: string[] = [];
+
+  for (const token of tokens) {
+    // Check if token matches a number/total pattern (e.g. "121/086")
+    if (token.includes('/')) {
+      const parts = token.split('/');
+      if (parts[0]) {
+        numberQuery = parts[0].trim();
+      }
+    } 
+    // Check if token is a card number (only digits, special prefixes, or digits with letter)
+    else if (
+      /^\d+$/.test(token) || 
+      /^(tg|gg|sv|promo|rc|swsh|sm|xy|bw|col|ul|ud|hs|pl|dp|ex|np)\d+$/i.test(token) || 
+      /^\d+[a-zA-Z]$/.test(token)
+    ) {
+      numberQuery = token;
+    } else {
+      nameTokens.push(token);
+    }
+  }
+
+  // If we have a number query, make the name search looser by using the first token (e.g. "Roxie" instead of "Roxie's Performance")
+  if (nameTokens.length > 0) {
+    if (numberQuery) {
+      nameQuery = nameTokens[0].replace(/'s$/i, '').replace(/[^a-zA-Z0-9áéíóúçñÁÉÍÓÚÇÑ]/g, '');
+    } else {
+      nameQuery = nameTokens.join(' ');
+    }
+  }
+
+  return { nameQuery, numberQuery };
+}
+
 // Search Pokémon cards via pokemontcg.io with local fallbacks and pagination support
 app.get('/api/pokemon/search', async (req, res) => {
   const queryParam = (req.query.q as string) || '';
@@ -390,15 +436,21 @@ app.get('/api/pokemon/search', async (req, res) => {
 
   try {
     let qString = '';
-    if (queryParam) {
-      qString += `name:"*${queryParam}*"`;
+    const { nameQuery, numberQuery } = parseSearchQuery(queryParam);
+    
+    if (nameQuery) {
+      qString += `name:"*${nameQuery}*"`;
+    }
+    if (numberQuery) {
+      if (qString) qString += ' ';
+      qString += `number:"${numberQuery}"`;
     }
     if (setParam) {
       if (qString) qString += ' ';
       qString += `set.id:${setParam}`;
     }
 
-    console.log(`Searching cards for: q="${queryParam}" set="${setParam}" page=${pageParam} pageSize=${pageSizeParam}`);
+    console.log(`Searching cards for parsed: name="${nameQuery}" number="${numberQuery}" set="${setParam}" page=${pageParam} pageSize=${pageSizeParam}`);
     const encodedQuery = encodeURIComponent(qString);
     const url = qString 
       ? `https://api.pokemontcg.io/v2/cards?q=${encodedQuery}&page=${pageParam}&pageSize=${pageSizeParam}&orderBy=name`
@@ -417,11 +469,17 @@ app.get('/api/pokemon/search', async (req, res) => {
     console.error('External API failed, falling back to local list:', error);
   }
 
-  // Local fallback search (matches only on name if q is specified)
+  // Local fallback search (matches on name and/or setNumber if specified)
   let matched = fallbackCards;
   if (queryParam) {
-    const lowerQuery = queryParam.toLowerCase();
-    matched = fallbackCards.filter(c => c.name.toLowerCase().includes(lowerQuery));
+    const { nameQuery, numberQuery } = parseSearchQuery(queryParam);
+    if (nameQuery) {
+      const lowerName = nameQuery.toLowerCase();
+      matched = matched.filter(c => c.name.toLowerCase().includes(lowerName));
+    }
+    if (numberQuery) {
+      matched = matched.filter(c => c.setNumber === numberQuery);
+    }
   }
   if (setParam) {
     matched = matched.filter(c => c.setCode === setParam);
