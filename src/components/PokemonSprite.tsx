@@ -5,6 +5,7 @@ interface PokemonSpriteProps {
   className?: string;
   size?: 'sm' | 'md' | 'lg';
   isStatic?: boolean;
+  key?: React.Key;
 }
 
 export const getPokemonSpriteUrl = (pokemonName: string, isStatic: boolean = true): string => {

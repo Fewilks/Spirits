@@ -404,6 +404,8 @@ export default function Dashboard({ currentMember, setActiveTab }: DashboardProp
   };
 
   const totalTeamWins = members.reduce((sum, m) => sum + m.wins, 0);
+  const totalTeamLosses = members.reduce((sum, m) => sum + m.losses, 0);
+  const totalTeamDraws = members.reduce((sum, m) => sum + m.draws, 0);
   const totalTeamMatches = members.reduce((sum, m) => sum + m.wins + m.losses + m.draws, 0);
   const teamWinRate = totalTeamMatches > 0 ? ((totalTeamWins / totalTeamMatches) * 100).toFixed(1) : '0.0';
 
@@ -460,9 +462,64 @@ export default function Dashboard({ currentMember, setActiveTab }: DashboardProp
               <Trophy className="w-4 h-4 text-yellow-500" />
             </div>
           </div>
-          <div className="mt-4">
-            <div className="text-3xl font-black text-white tracking-tight">{teamWinRate}%</div>
-            <p className="text-[10px] text-slate-500 mt-1 font-mono">Média de {totalTeamMatches} partidas</p>
+          <div className="mt-4 flex items-center justify-between gap-2">
+            <div>
+              <div className="text-3xl font-black text-white tracking-tight">{teamWinRate}%</div>
+              <p className="text-[10px] text-slate-500 mt-1 font-mono">Média de {totalTeamMatches} partidas</p>
+            </div>
+            {/* Mini Donut Chart */}
+            <div className="relative w-12 h-12 flex items-center justify-center shrink-0">
+              <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
+                {totalTeamMatches === 0 ? (
+                  <circle
+                    cx="50"
+                    cy="50"
+                    r="38"
+                    className="stroke-slate-800 fill-none"
+                    strokeWidth="12"
+                  />
+                ) : (
+                  <>
+                    {/* Wins (Green) */}
+                    {totalTeamWins > 0 && (
+                      <circle
+                        cx="50"
+                        cy="50"
+                        r="38"
+                        className="stroke-emerald-500 fill-none"
+                        strokeWidth="12"
+                        strokeDasharray={`${(totalTeamWins / totalTeamMatches) * 238.76} 238.76`}
+                        strokeDashoffset={0}
+                      />
+                    )}
+                    {/* Losses (Red) */}
+                    {totalTeamLosses > 0 && (
+                      <circle
+                        cx="50"
+                        cy="50"
+                        r="38"
+                        className="stroke-rose-500 fill-none"
+                        strokeWidth="12"
+                        strokeDasharray={`${(totalTeamLosses / totalTeamMatches) * 238.76} 238.76`}
+                        strokeDashoffset={-((totalTeamWins / totalTeamMatches) * 238.76)}
+                      />
+                    )}
+                    {/* Draws (Gray) */}
+                    {totalTeamDraws > 0 && (
+                      <circle
+                        cx="50"
+                        cy="50"
+                        r="38"
+                        className="stroke-slate-500 fill-none"
+                        strokeWidth="12"
+                        strokeDasharray={`${(totalTeamDraws / totalTeamMatches) * 238.76} 238.76`}
+                        strokeDashoffset={-(((totalTeamWins + totalTeamLosses) / totalTeamMatches) * 238.76)}
+                      />
+                    )}
+                  </>
+                )}
+              </svg>
+            </div>
           </div>
         </div>
 
@@ -605,11 +662,9 @@ export default function Dashboard({ currentMember, setActiveTab }: DashboardProp
                           <span className="text-white font-extrabold text-sm">{match.player1Name}</span>
                           <span className="text-[10px] text-purple-400 font-mono bg-purple-950/40 px-1.5 py-0.5 rounded">({match.deckArchetype})</span>
                           {/* Highlighted icons */}
-                          <div className="flex -space-x-1.5">
+                          <div className="flex gap-0.5 bg-transparent">
                             {getArchetypeSprites(match.deckArchetype).map((spriteName, idx) => (
-                              <div key={idx} className="w-5.5 h-5.5 rounded-md bg-slate-900 border border-slate-800 flex items-center justify-center overflow-hidden shadow">
-                                <PokemonSprite name={spriteName} size="sm" className="w-4 h-4 scale-110" />
-                              </div>
+                              <PokemonSprite key={idx} name={spriteName} size="sm" className="w-5.5 h-5.5" isStatic={true} />
                             ))}
                           </div>
                         </div>
@@ -617,11 +672,9 @@ export default function Dashboard({ currentMember, setActiveTab }: DashboardProp
                           vs <span className="text-slate-300 font-semibold">{match.player2Name}</span>
                           <span className="text-[10px] bg-slate-900/80 px-1.5 py-0.5 rounded font-mono text-slate-500 capitalize">({match.opponentArchetype || match.opponentDeck})</span>
                           {/* Opponent Highlighted icons */}
-                          <div className="flex -space-x-1.5 font-semibold">
+                          <div className="flex gap-0.5 bg-transparent">
                             {getArchetypeSprites(match.opponentArchetype || match.opponentDeck).map((spriteName, idx) => (
-                              <div key={idx} className="w-5.5 h-5.5 rounded-md bg-slate-900 border border-slate-800 flex items-center justify-center overflow-hidden shadow">
-                                <PokemonSprite name={spriteName} size="sm" className="w-4 h-4 scale-110" />
-                              </div>
+                              <PokemonSprite key={idx} name={spriteName} size="sm" className="w-5.5 h-5.5" isStatic={true} />
                             ))}
                           </div>
                         </div>
@@ -674,17 +727,10 @@ export default function Dashboard({ currentMember, setActiveTab }: DashboardProp
             <div className="space-y-3">
               {metaDecks.map((deck, idx) => (
                 <div key={`${deck.name}-${idx}`} className="flex gap-3 bg-slate-950/30 p-3 rounded-xl border border-slate-850 hover:border-purple-500/10 transition-all">
-                  <div className="w-14 h-14 bg-slate-950/50 rounded-xl border border-slate-850 flex items-center justify-center shrink-0 relative overflow-hidden shadow-inner">
-                    <div className="flex -space-x-3">
-                      {getDeckSprites(deck).map((spriteName, sIdx) => (
-                        <div 
-                          key={sIdx} 
-                          className="w-9 h-9 rounded-lg bg-slate-900 border border-slate-800/80 flex items-center justify-center shadow-lg relative z-10"
-                        >
-                          <PokemonSprite name={spriteName} size="sm" className="w-8 h-8 scale-110" isStatic={true} />
-                        </div>
-                      ))}
-                    </div>
+                  <div className="flex items-center gap-1 shrink-0 bg-transparent">
+                    {getDeckSprites(deck).map((spriteName, sIdx) => (
+                      <PokemonSprite key={sIdx} name={spriteName} size="sm" className="w-9 h-9 object-contain" isStatic={true} />
+                    ))}
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex justify-between items-start gap-1">

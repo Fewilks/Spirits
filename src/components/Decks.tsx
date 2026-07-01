@@ -617,11 +617,9 @@ export default function Decks({ currentMember }: DecksProps) {
                     id={`deck-item-${deck.id}`}
                   >
                     <div className="min-w-0 flex items-center gap-3">
-                      <div className="flex -space-x-2 shrink-0">
+                      <div className="flex gap-1 shrink-0 bg-transparent">
                         {getArchetypeSprites(deck.archetype).map((spriteName, idx) => (
-                          <div key={idx} className="w-8 h-8 rounded-lg bg-slate-950 border border-slate-800 flex items-center justify-center overflow-hidden shadow-md">
-                            <PokemonSprite name={spriteName} size="sm" className="w-6 h-6 scale-110" />
-                          </div>
+                          <PokemonSprite key={idx} name={spriteName} size="sm" className="w-8 h-8 object-contain" isStatic={true} />
                         ))}
                       </div>
                       <div className="min-w-0">
@@ -667,11 +665,9 @@ export default function Decks({ currentMember }: DecksProps) {
                   {/* Header info sheet */}
                   <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-slate-850 pb-5">
                     <div className="flex items-center gap-4">
-                      <div className="flex -space-x-3 shrink-0">
+                      <div className="flex gap-1 shrink-0 bg-transparent">
                         {getArchetypeSprites(activeDeck.archetype).map((spriteName, idx) => (
-                          <div key={idx} className="w-12 h-12 rounded-xl bg-slate-950 border border-slate-800 flex items-center justify-center overflow-hidden shadow-lg">
-                            <PokemonSprite name={spriteName} size="md" className="w-9 h-9 scale-110" />
-                          </div>
+                          <PokemonSprite key={idx} name={spriteName} size="md" className="w-11 h-11 object-contain" isStatic={true} />
                         ))}
                       </div>
                       <div>

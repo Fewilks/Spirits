@@ -393,6 +393,19 @@ export default function Matches({ currentMember }: MatchesProps) {
     return matchesResult && matchesFormat && matchesMine;
   });
 
+  const total = filteredMatches.length;
+  const wins = filteredMatches.filter(m => m.result === 'win').length;
+  const losses = filteredMatches.filter(m => m.result === 'loss').length;
+  const draws = filteredMatches.filter(m => m.result === 'draw').length;
+  const winRatePercent = total > 0 ? (wins / total) * 100 : 0;
+
+  // Calculated circular track properties
+  const radius = 35;
+  const circumference = 2 * Math.PI * radius; // ~219.91
+  const winsShare = total > 0 ? (wins / total) * circumference : 0;
+  const lossesShare = total > 0 ? (losses / total) * circumference : 0;
+  const drawsShare = total > 0 ? (draws / total) * circumference : 0;
+
   return (
     <div className="space-y-8" id="matches-view">
       
@@ -425,6 +438,107 @@ export default function Matches({ currentMember }: MatchesProps) {
           >
             <PlusCircle className="w-5 h-5" /> Registrar Nova Partida
           </button>
+        </div>
+      </div>
+
+      {/* Dynamic Win Rate Donut Chart Panel */}
+      <div className="bg-slate-900/40 border border-slate-800 p-6 rounded-2xl flex flex-col md:flex-row items-center justify-between gap-6">
+        <div className="flex flex-col sm:flex-row items-center gap-6 text-center sm:text-left">
+          {/* Circular Donut Graph */}
+          <div className="relative w-24 h-24 flex items-center justify-center shrink-0">
+            <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
+              {total === 0 ? (
+                <circle
+                  cx="50"
+                  cy="50"
+                  r="35"
+                  className="stroke-slate-800 fill-none"
+                  strokeWidth="8"
+                />
+              ) : (
+                <>
+                  {/* Wins Segment (Green) */}
+                  {wins > 0 && (
+                    <circle
+                      cx="50"
+                      cy="50"
+                      r="35"
+                      className="stroke-emerald-500 fill-none transition-all duration-500"
+                      strokeWidth="8"
+                      strokeDasharray={`${winsShare} ${circumference}`}
+                      strokeDashoffset={0}
+                    />
+                  )}
+                  {/* Losses Segment (Red) */}
+                  {losses > 0 && (
+                    <circle
+                      cx="50"
+                      cy="50"
+                      r="35"
+                      className="stroke-rose-500 fill-none transition-all duration-500"
+                      strokeWidth="8"
+                      strokeDasharray={`${lossesShare} ${circumference}`}
+                      strokeDashoffset={-winsShare}
+                    />
+                  )}
+                  {/* Draws Segment (Gray) */}
+                  {draws > 0 && (
+                    <circle
+                      cx="50"
+                      cy="50"
+                      r="35"
+                      className="stroke-slate-500 fill-none transition-all duration-500"
+                      strokeWidth="8"
+                      strokeDasharray={`${drawsShare} ${circumference}`}
+                      strokeDashoffset={-(winsShare + lossesShare)}
+                    />
+                  )}
+                </>
+              )}
+            </svg>
+            <div className="absolute flex flex-col items-center justify-center text-center">
+              <span className="text-lg font-black text-white font-mono">{total > 0 ? winRatePercent.toFixed(1) : '0.0'}%</span>
+              <span className="text-[8px] text-slate-500 uppercase font-black tracking-wider">Aproveitamento</span>
+            </div>
+          </div>
+
+          <div className="space-y-1.5">
+            <h3 className="text-white font-extrabold text-base">Aproveitamento Dinâmico</h3>
+            <p className="text-xs text-slate-400 max-w-md leading-relaxed">
+              Resumo estatístico das <strong className="text-white font-mono">{total}</strong> partidas filtradas. A taxa de vitórias desconsidera empates ou derrotas para o cálculo puro do ranking.
+            </p>
+            {/* Custom legends with precise coloring */}
+            <div className="flex flex-wrap items-center justify-center sm:justify-start gap-4 text-xs font-semibold mt-2">
+              <div className="flex items-center gap-1.5">
+                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+                <span className="text-slate-300">Vitórias: <strong className="text-emerald-400 font-bold font-mono">{wins}</strong> ({total > 0 ? ((wins/total)*100).toFixed(0) : 0}%)</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="w-2.5 h-2.5 rounded-full bg-rose-500"></span>
+                <span className="text-slate-300">Derrotas: <strong className="text-rose-400 font-bold font-mono">{losses}</strong> ({total > 0 ? ((losses/total)*100).toFixed(0) : 0}%)</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="w-2.5 h-2.5 rounded-full bg-slate-500"></span>
+                <span className="text-slate-300">Empates: <strong className="text-slate-400 font-bold font-mono">{draws}</strong> ({total > 0 ? ((draws/total)*100).toFixed(0) : 0}%)</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Dynamic score dashboard bar cards */}
+        <div className="grid grid-cols-3 gap-3 w-full md:w-auto shrink-0 md:min-w-[280px]">
+          <div className="bg-slate-950/40 border border-slate-850 p-3 rounded-xl text-center">
+            <span className="text-[10px] text-slate-500 uppercase font-bold block font-mono">V</span>
+            <span className="text-lg font-black text-emerald-400 font-mono block mt-1">{wins}</span>
+          </div>
+          <div className="bg-slate-950/40 border border-slate-850 p-3 rounded-xl text-center">
+            <span className="text-[10px] text-slate-500 uppercase font-bold block font-mono">D</span>
+            <span className="text-lg font-black text-rose-400 font-mono block mt-1">{losses}</span>
+          </div>
+          <div className="bg-slate-950/40 border border-slate-850 p-3 rounded-xl text-center">
+            <span className="text-[10px] text-slate-500 uppercase font-bold block font-mono">E</span>
+            <span className="text-lg font-black text-slate-400 font-mono block mt-1">{draws}</span>
+          </div>
         </div>
       </div>
 
@@ -550,11 +664,9 @@ export default function Matches({ currentMember }: MatchesProps) {
                 <div className="grid grid-cols-2 gap-4 bg-slate-950/40 p-3 rounded-xl border border-slate-850">
                   <div className="flex items-center gap-2.5 min-w-0">
                     {/* Archetype Icons */}
-                    <div className="flex -space-x-2 shrink-0">
+                    <div className="flex gap-1 shrink-0 bg-transparent">
                       {getArchetypeSprites(match.deckArchetype).map((spriteName, idx) => (
-                        <div key={idx} className="w-7 h-7 rounded-lg bg-slate-900 border border-slate-850 flex items-center justify-center overflow-hidden shadow-md">
-                          <PokemonSprite name={spriteName} size="sm" className="w-5.5 h-5.5 scale-110" />
-                        </div>
+                        <PokemonSprite key={idx} name={spriteName} size="sm" className="w-8 h-8 object-contain" isStatic={true} />
                       ))}
                     </div>
                     <div className="min-w-0">
@@ -571,11 +683,9 @@ export default function Matches({ currentMember }: MatchesProps) {
                       <div className="text-[10px] text-slate-400 truncate capitalize">{match.opponentArchetype || match.opponentDeck}</div>
                     </div>
                     {/* Opponent Archetype Icons */}
-                    <div className="flex -space-x-2 shrink-0">
+                    <div className="flex gap-1 shrink-0 bg-transparent">
                       {getArchetypeSprites(match.opponentArchetype || match.opponentDeck).map((spriteName, idx) => (
-                        <div key={idx} className="w-7 h-7 rounded-lg bg-slate-900 border border-slate-850 flex items-center justify-center overflow-hidden shadow-md">
-                          <PokemonSprite name={spriteName} size="sm" className="w-5.5 h-5.5 scale-110" />
-                        </div>
+                        <PokemonSprite key={idx} name={spriteName} size="sm" className="w-8 h-8 object-contain" isStatic={true} />
                       ))}
                     </div>
                   </div>
