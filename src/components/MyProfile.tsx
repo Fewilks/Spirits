@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { db, championshipPointsCol, addChampionshipPoints, deleteChampionshipPointRecord, purgeTestDataKeepCore } from '../lib/firebase';
+import { db, championshipPointsCol, addChampionshipPoints, deleteChampionshipPointRecord } from '../lib/firebase';
 import { doc, updateDoc, getDocs } from 'firebase/firestore';
 import { Member, ChampionshipPointRecord } from '../types';
 import { getRoleBadge } from '../utils';
@@ -103,11 +103,6 @@ export default function MyProfile({ currentMember, setCurrentMember, onMemberUpd
   const [formCpDate, setFormCpDate] = useState(new Date().toISOString().split('T')[0]);
   const [formCpLocation, setFormCpLocation] = useState('');
   const [formCpNotes, setFormCpNotes] = useState('');
-
-  // Maintenance purge state
-  const [purging, setPurging] = useState(false);
-  const [purgeSuccess, setPurgeSuccess] = useState<string | null>(null);
-  const [showConfirmModal, setShowConfirmModal] = useState(false);
 
   // Load user's CP records from Firestore
   const loadMyCpRecords = async () => {
@@ -219,20 +214,6 @@ export default function MyProfile({ currentMember, setCurrentMember, onMemberUpd
     } catch (err) {
       console.error('Error deleting CP record:', err);
       alert('Erro ao excluir registro de CP.');
-    }
-  };
-
-  const handleExecutePurge = async () => {
-    try {
-      setPurging(true);
-      setShowConfirmModal(false);
-      const res = await purgeTestDataKeepCore();
-      setPurgeSuccess(`Limpeza concluída! ${res.deletedMatches} partidas, ${res.deletedTournaments} campeonatos, ${res.deletedLoans} empréstimos e ${res.deletedLogs} logs limpos.`);
-      onMemberUpdated();
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setPurging(false);
     }
   };
 
@@ -700,35 +681,6 @@ export default function MyProfile({ currentMember, setCurrentMember, onMemberUpd
               </div>
             </div>
           </div>
-
-          {/* Zona de Manutenção / Modo Produção Real */}
-          <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-6 backdrop-blur-md">
-            <h3 className="text-base font-bold text-white flex items-center gap-2 border-b border-slate-850 pb-3 mb-4">
-              <Trash2 className="w-4.5 h-4.5 text-rose-400" />
-              Limpeza Geral de Testes
-            </h3>
-
-            <p className="text-xs text-slate-400 leading-relaxed mb-4">
-              Zera dados de testes mantendo todos os <strong>Baralhos (Decks)</strong> cadastrados intactos.
-            </p>
-
-            {purgeSuccess && (
-              <div className="mb-4 p-3 bg-emerald-950/50 border border-emerald-500/30 rounded-xl text-xs text-emerald-300 flex items-center gap-2">
-                <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-                <span>{purgeSuccess}</span>
-              </div>
-            )}
-
-            <button
-              type="button"
-              onClick={() => setShowConfirmModal(true)}
-              disabled={purging}
-              className="w-full py-2.5 px-4 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 bg-rose-950/40 hover:bg-rose-900/60 text-rose-300 border border-rose-500/30 cursor-pointer disabled:opacity-50"
-            >
-              <Trash2 className="w-4 h-4 text-rose-400" />
-              <span>{purging ? 'Limpando dados de teste...' : '🧹 Limpar Dados de Teste (Manter Decks)'}</span>
-            </button>
-          </div>
         </div>
 
       </div>
@@ -875,45 +827,6 @@ export default function MyProfile({ currentMember, setCurrentMember, onMemberUpd
               </button>
             </div>
           </form>
-        </div>
-      </ModalPortal>
-
-      {/* MODAL 2: CONFIRMAÇÃO DA LIMPEZA DE TESTES */}
-      <ModalPortal isOpen={showConfirmModal} onClose={() => setShowConfirmModal(false)}>
-        <div className="bg-slate-900 border border-rose-500/40 w-full max-w-md rounded-2xl p-6 shadow-2xl space-y-4 my-auto animate-fade-in">
-          <div className="flex items-center gap-3 text-rose-400">
-            <AlertOctagon className="w-6 h-6 shrink-0" />
-            <h4 className="text-base font-bold text-white">Confirmar Limpeza de Testes</h4>
-          </div>
-
-          <p className="text-xs text-slate-300 leading-relaxed">
-            Esta ação apagará permanentemente todos os registros de <strong>partidas</strong>, <strong>campeonatos</strong> e <strong>empréstimos de teste</strong>, zerando as estatísticas para começar do zero.
-          </p>
-
-          <div className="bg-slate-950 p-3 rounded-xl border border-slate-800 text-[11px] text-slate-400 space-y-1">
-            <div className="text-emerald-400 font-bold">✅ O que será MANTIDO:</div>
-            <div>• Todos os Baralhos cadastrados (100% preservados)</div>
-            <div>• Todos os Membros do Time & Seu Perfil</div>
-            <div>• Toda a Coleção de Cartas</div>
-          </div>
-
-          <div className="flex items-center justify-end gap-2 pt-2">
-            <button
-              type="button"
-              onClick={() => setShowConfirmModal(false)}
-              className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-400 hover:text-white bg-slate-800 hover:bg-slate-750 transition-all cursor-pointer"
-            >
-              Cancelar
-            </button>
-            <button
-              type="button"
-              onClick={handleExecutePurge}
-              disabled={purging}
-              className="px-4 py-2 rounded-xl text-xs font-bold text-white bg-rose-600 hover:bg-rose-500 transition-all shadow-lg shadow-rose-900/30 cursor-pointer disabled:opacity-50"
-            >
-              {purging ? 'Limpando...' : 'Confirmar e Limpar'}
-            </button>
-          </div>
         </div>
       </ModalPortal>
 

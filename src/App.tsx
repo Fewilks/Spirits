@@ -5,7 +5,6 @@ import {
   seedDatabaseIfEmpty, 
   seedTournamentsIfEmpty, 
   purgeAllDataExceptDecks,
-  purgeTestDataKeepCore, 
   ensureInitialChampionshipData,
   membersCol, 
   collectionCol, 
