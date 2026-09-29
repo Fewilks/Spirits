@@ -1090,7 +1090,7 @@ export default function Tournaments({ currentMember }: TournamentsProps) {
 
       {/* 5. MODAL DE CADASTRO / EDIÇÃO */}
       <ModalPortal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} id="tournaments-modal-portal">
-        <div className="bg-slate-900 border border-slate-700/80 rounded-2xl w-full max-w-2xl max-h-[90dvh] flex flex-col shadow-2xl overflow-hidden my-auto animate-fade-in">
+        <div className="bg-slate-900 border border-slate-700/80 rounded-2xl w-full max-w-2xl max-h-[92dvh] sm:max-h-[88dvh] flex flex-col shadow-2xl overflow-hidden shrink-0 animate-fade-in">
             
             {/* Modal Header */}
             <div className="px-5 py-4 border-b border-slate-800 flex items-center justify-between bg-slate-950/70 shrink-0">

@@ -1018,7 +1018,7 @@ export default function Decks({ currentMember }: DecksProps) {
         setShowImportModal(false);
         setEditingDeck(null);
       }} id="import-deck-modal">
-        <div className="bg-slate-900 border border-slate-700/80 w-full max-w-2xl rounded-2xl shadow-2xl overflow-hidden max-h-[90dvh] flex flex-col my-auto animate-fade-in">
+        <div className="bg-slate-900 border border-slate-700/80 w-full max-w-2xl rounded-2xl shadow-2xl overflow-hidden max-h-[92dvh] sm:max-h-[88dvh] flex flex-col shrink-0 animate-fade-in">
             
             {/* Header */}
             <div className="px-5 py-4 border-b border-slate-800 flex items-center justify-between bg-slate-950/70 shrink-0">
@@ -1184,7 +1184,7 @@ Pokémon: 3
       {/* Modal para Escolher os 2 Sprites Principais a partir da Leitura de Cartas do Baralho Limitless */}
       <ModalPortal isOpen={!!spriteModalDeck} onClose={() => setSpriteModalDeck(null)} id="choose-sprites-modal">
         {spriteModalDeck && (
-          <div className="bg-slate-900 border border-purple-500/40 w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden max-h-[90dvh] flex flex-col my-auto animate-fade-in">
+          <div className="bg-slate-900 border border-purple-500/40 w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden max-h-[92dvh] sm:max-h-[88dvh] flex flex-col shrink-0 animate-fade-in">
             {/* Modal Header */}
             <div className="p-5 border-b border-slate-800 flex items-center justify-between bg-gradient-to-r from-purple-950/60 to-slate-900">
               <div className="flex items-center gap-2.5">

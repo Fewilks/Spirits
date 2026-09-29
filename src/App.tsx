@@ -37,7 +37,9 @@ import {
   Lock,
   FileText,
   CalendarDays,
-  Flame
+  Flame,
+  Menu,
+  X
 } from 'lucide-react';
 import PokemonSprite from './components/PokemonSprite';
 import PokemonLoader from './components/PokemonLoader';
@@ -62,6 +64,7 @@ export default function App() {
   const [loading, setLoading] = useState(true);
   const [showProfileSwitcher, setShowProfileSwitcher] = useState(false);
   const [logoFailed, setLogoFailed] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   // Bootstrap Firebase Firestore and retrieve members list on load
   const loadPortalData = async (userUid?: string) => {
@@ -274,10 +277,126 @@ export default function App() {
   ];
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 font-sans flex flex-col md:flex-row" id="app-shell">
+    <div className="h-[100dvh] max-h-[100dvh] w-full overflow-hidden bg-slate-950 text-slate-100 font-sans flex flex-col md:flex-row" id="app-shell">
       
-      {/* 1. LEFT SIDEBAR PANEL */}
-      <aside className="w-full md:w-64 bg-slate-900/50 border-b md:border-b-0 md:border-r border-slate-850/80 shrink-0 flex flex-col justify-between p-5 relative z-40 backdrop-blur-md">
+      {/* 1. MOBILE TOP HEADER (< md) */}
+      <header className="md:hidden h-14 bg-slate-900/90 border-b border-slate-800/80 px-4 flex items-center justify-between shrink-0 z-30 backdrop-blur-md">
+        <div className="flex items-center gap-2.5">
+          <div className="w-8 h-8 bg-gradient-to-tr from-purple-650 to-indigo-650 rounded-lg flex items-center justify-center shadow-md shadow-purple-950/50 border border-purple-400/20 shrink-0 overflow-hidden">
+            {!logoFailed ? (
+              <img 
+                src={`${import.meta.env.BASE_URL}logo-spirits.png`} 
+                alt="Spirits Logo" 
+                className="w-full h-full object-contain p-0.5"
+                onError={() => setLogoFailed(true)}
+              />
+            ) : (
+              <span className="text-lg">👻</span>
+            )}
+          </div>
+          <div>
+            <h1 className="text-sm font-black tracking-tight text-white flex items-center gap-1">
+              SPIRITS <span className="text-purple-400 text-[10px] font-mono">TCG</span>
+            </h1>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2">
+          {currentMember && (
+            <div className="flex items-center gap-1.5 bg-slate-950/60 px-2.5 py-1 rounded-lg border border-slate-800">
+              <PokemonSprite name={currentMember.avatarSprite} size="xs" className="w-4 h-4" />
+              <span className="text-xs font-bold text-white max-w-[100px] truncate">{currentMember.nickname || currentMember.name}</span>
+            </div>
+          )}
+
+          <button
+            type="button"
+            id="mobile-menu-toggle-btn"
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700/80 transition-colors cursor-pointer"
+            aria-label="Abrir menu de navegação"
+          >
+            {mobileMenuOpen ? <X className="w-5 h-5 text-purple-400" /> : <Menu className="w-5 h-5" />}
+          </button>
+        </div>
+      </header>
+
+      {/* 2. MOBILE NAVIGATION DRAWER OVERLAY (< md) */}
+      {mobileMenuOpen && (
+        <div className="fixed inset-0 z-50 bg-slate-950/90 backdrop-blur-md flex flex-col md:hidden animate-fade-in p-4 overflow-y-auto overscroll-contain">
+          <div className="flex items-center justify-between pb-4 border-b border-slate-800">
+            <div className="flex items-center gap-2.5">
+              <span className="text-xl">👻</span>
+              <span className="font-black text-white text-base">Menu Spirits TCG</span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setMobileMenuOpen(false)}
+              className="p-1.5 rounded-lg bg-slate-800 text-slate-400 hover:text-white"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+
+          {currentMember && (
+            <div className="bg-slate-900/80 p-3 rounded-xl border border-slate-800 mt-4 flex items-center gap-3">
+              <div className="w-10 h-10 bg-slate-950 rounded-lg border border-slate-800 flex items-center justify-center shrink-0">
+                <PokemonSprite name={currentMember.avatarSprite} size="sm" />
+              </div>
+              <div className="min-w-0">
+                <div className="mb-0.5">{getRoleBadge(currentMember.role)}</div>
+                <div className="text-white font-bold text-sm truncate">{currentMember.name}</div>
+                {currentMember.nickname && <div className="text-xs text-purple-400">@{currentMember.nickname}</div>}
+              </div>
+            </div>
+          )}
+
+          <nav className="space-y-1.5 mt-4 flex-1">
+            {menuItems.map(item => {
+              const Icon = item.icon;
+              const isActive = activeTab === item.id;
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => {
+                    setActiveTab(item.id);
+                    setMobileMenuOpen(false);
+                  }}
+                  className={`w-full px-4 py-3 rounded-xl text-sm font-bold transition-all flex items-center justify-between cursor-pointer ${
+                    isActive 
+                      ? 'bg-purple-600/30 text-purple-300 border border-purple-500/40 font-extrabold' 
+                      : 'text-slate-300 hover:bg-slate-850 hover:text-white'
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <Icon className={`w-5 h-5 shrink-0 ${isActive ? 'text-purple-400' : 'text-slate-400'}`} />
+                    <span>{item.label}</span>
+                  </div>
+                  {isActive && <span className="w-2 h-2 rounded-full bg-purple-400" />}
+                </button>
+              );
+            })}
+          </nav>
+
+          <div className="pt-4 border-t border-slate-800 space-y-3 mt-6">
+            <button
+              onClick={() => {
+                setMobileMenuOpen(false);
+                signOut(auth);
+              }}
+              className="w-full py-3 bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-800 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer shadow-md"
+            >
+              <span>Sair do Portal</span>
+            </button>
+            <div className="text-center text-[10px] text-slate-500 font-mono">
+              Spirits competitive v1.2 • Firestore Sincronizado
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 3. DESKTOP PERMANENT SIDEBAR (>= md) */}
+      <aside className="hidden md:flex md:w-64 bg-slate-900/50 border-r border-slate-850/80 shrink-0 flex-col justify-between p-5 relative z-40 backdrop-blur-md overflow-y-auto overscroll-contain">
         
         <div className="space-y-6">
           {/* Spirits Team Branding Brand Header */}
@@ -322,7 +441,6 @@ export default function App() {
             {menuItems.map(item => {
               const Icon = item.icon;
               const isActive = activeTab === item.id;
-              const isLocked = false;
 
               return (
                 <button
@@ -368,8 +486,8 @@ export default function App() {
 
       </aside>
 
-      {/* 2. MAIN CORE STAGE SHEET */}
-      <main className="flex-1 bg-slate-950 p-6 md:p-8 overflow-y-auto max-h-screen" id="main-stage">
+      {/* 4. MAIN CORE STAGE SHEET */}
+      <main className="flex-1 h-full overflow-y-auto bg-slate-950 p-4 sm:p-6 md:p-8 overscroll-contain" id="main-stage">
         {currentMember ? (
           <div>
             {activeTab === 'dashboard' && (

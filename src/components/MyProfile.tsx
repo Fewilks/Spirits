@@ -687,7 +687,7 @@ export default function MyProfile({ currentMember, setCurrentMember, onMemberUpd
 
       {/* MODAL 1: LANÇAR PONTOS CP (USANDO MODALPORTAL PARA RESPONSIVIDADE PERFEITA EM QUALQUER APARELHO) */}
       <ModalPortal isOpen={showAddCpModal} onClose={() => setShowAddCpModal(false)}>
-        <div className="bg-slate-900 border border-amber-500/40 w-full max-w-lg rounded-2xl shadow-2xl flex flex-col max-h-[90dvh] overflow-hidden my-auto animate-fade-in">
+        <div className="bg-slate-900 border border-amber-500/40 w-full max-w-lg rounded-2xl shadow-2xl flex flex-col max-h-[92dvh] sm:max-h-[88dvh] overflow-hidden shrink-0 animate-fade-in">
           {/* Header */}
           <div className="px-5 py-4 border-b border-slate-800 flex items-center justify-between bg-slate-950/80 shrink-0">
             <div className="flex items-center gap-2.5">

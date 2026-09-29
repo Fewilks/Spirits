@@ -440,7 +440,7 @@ export default function TeamMembers({ currentMember, setCurrentMember, onMemberU
 
       {/* Add Teammate Modal */}
       <ModalPortal isOpen={showAddModal} onClose={() => setShowAddModal(false)} id="add-member-modal">
-        <div className="bg-slate-900 border border-slate-700/80 w-full max-w-xl rounded-2xl shadow-2xl overflow-hidden max-h-[90dvh] flex flex-col my-auto animate-fade-in">
+        <div className="bg-slate-900 border border-slate-700/80 w-full max-w-xl rounded-2xl shadow-2xl overflow-hidden max-h-[92dvh] sm:max-h-[88dvh] flex flex-col shrink-0 animate-fade-in">
             
             {/* Header */}
             <div className="px-5 py-4 border-b border-slate-800 flex items-center justify-between bg-slate-950/70 shrink-0">
@@ -564,7 +564,7 @@ export default function TeamMembers({ currentMember, setCurrentMember, onMemberU
 
       {/* Edit Profile Modal */}
       <ModalPortal isOpen={showEditModal} onClose={() => setShowEditModal(false)} id="edit-profile-modal">
-        <div className="bg-slate-900 border border-slate-700/80 w-full max-w-xl rounded-2xl shadow-2xl overflow-hidden max-h-[90dvh] flex flex-col my-auto animate-fade-in">
+        <div className="bg-slate-900 border border-slate-700/80 w-full max-w-xl rounded-2xl shadow-2xl overflow-hidden max-h-[92dvh] sm:max-h-[88dvh] flex flex-col shrink-0 animate-fade-in">
             
             {/* Header */}
             <div className="px-5 py-4 border-b border-slate-800 flex items-center justify-between bg-slate-950/70 shrink-0">

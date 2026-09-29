@@ -106,7 +106,7 @@ export default function LogImporterModal({
 
   return (
     <ModalPortal isOpen={isOpen} onClose={onClose} id="log-importer-modal-portal">
-      <div className="bg-slate-900 border border-purple-500/30 rounded-2xl w-full max-w-2xl max-h-[90dvh] flex flex-col shadow-2xl overflow-hidden my-auto animate-fade-in">
+      <div className="bg-slate-900 border border-purple-500/30 rounded-2xl w-full max-w-2xl max-h-[92dvh] sm:max-h-[88dvh] flex flex-col shadow-2xl overflow-hidden shrink-0 animate-fade-in">
         {/* Modal Header */}
         <div className="p-4 sm:p-5 border-b border-slate-800 flex items-center justify-between bg-gradient-to-r from-purple-950/60 via-slate-900 to-indigo-950/60 shrink-0">
           <div className="flex items-center gap-3">

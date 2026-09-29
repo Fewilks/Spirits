@@ -659,7 +659,7 @@ export default function Collection({ currentMember }: CollectionProps) {
         setSearchResults([]);
         setSearchQuery('');
       }} id="add-card-modal">
-        <div className="bg-slate-900 border border-slate-700/80 w-full max-w-3xl rounded-2xl shadow-2xl overflow-hidden max-h-[90dvh] flex flex-col my-auto animate-fade-in">
+        <div className="bg-slate-900 border border-slate-700/80 w-full max-w-3xl rounded-2xl shadow-2xl overflow-hidden max-h-[92dvh] sm:max-h-[88dvh] flex flex-col shrink-0 animate-fade-in">
             
             {/* Modal Header */}
             <div className="px-5 py-4 border-b border-slate-800 flex items-center justify-between bg-slate-950/70 shrink-0">
