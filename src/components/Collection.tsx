@@ -139,6 +139,17 @@ export default function Collection({ currentMember }: CollectionProps) {
     fetchCollection();
   }, [currentMember, collectionTab]);
 
+  // Agrupa as coleções por série para navegação organizada e rápida
+  const groupedSets = React.useMemo<Record<string, any[]>>(() => {
+    const groups: Record<string, any[]> = {};
+    sets.forEach((s) => {
+      const series = s.series || 'Outras Coleções';
+      if (!groups[series]) groups[series] = [];
+      groups[series].push(s);
+    });
+    return groups;
+  }, [sets]);
+
   // Handle live database search via backend API proxy with instant local catalog fallback
   const handleDatabaseSearch = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
@@ -395,10 +406,14 @@ export default function Collection({ currentMember }: CollectionProps) {
                   onChange={(e) => setExplorerSet(e.target.value)}
                   className="w-full px-3.5 py-2.5 bg-slate-950 border border-purple-500/40 rounded-xl text-white text-sm font-bold outline-none cursor-pointer focus:border-purple-400"
                 >
-                  {sets.map((s: any, idx: number) => (
-                    <option key={`exp-set-${s.id || idx}`} value={s.id}>
-                      {s.name} ({s.id ? String(s.id).toUpperCase() : ''})
-                    </option>
+                  {Object.entries(groupedSets).map(([seriesName, groupList]: [string, any[]]) => (
+                    <optgroup key={seriesName} label={seriesName} className="bg-slate-900 font-bold text-purple-300">
+                      {groupList.map((s: any, idx: number) => (
+                        <option key={`exp-set-${s.id || idx}`} value={s.id} className="text-white font-medium bg-slate-950">
+                          {s.name} ({s.id ? String(s.id).toUpperCase() : ''})
+                        </option>
+                      ))}
+                    </optgroup>
                   ))}
                 </select>
               </div>
@@ -413,7 +428,12 @@ export default function Collection({ currentMember }: CollectionProps) {
                 { label: 'Fogo Branco (WHT)', code: 'WHT' },
                 { label: 'Raio Preto (BLK)', code: 'BLK' },
                 { label: 'Evoluções Prismáticas (PRE)', code: 'PRE' },
-                { label: 'Celebrações 30 Anos (30TH)', code: '30TH' }
+                { label: 'Faíscas Impetuosas (SSP)', code: 'SSP' },
+                { label: '151 (MEW)', code: 'MEW' },
+                { label: 'Heróis Excelsos (ASC)', code: 'ASC' },
+                { label: 'Celebrações 30 Anos (30TH)', code: '30TH' },
+                { label: 'Realeza Absoluta (CRZ)', code: 'CRZ' },
+                { label: 'Origem Perdida (LOR)', code: 'LOR' }
               ].map((pill) => (
                 <button
                   key={pill.code}
@@ -700,18 +720,22 @@ export default function Collection({ currentMember }: CollectionProps) {
                 </div>
                 
                 {/* Collection Filter */}
-                <div className="w-full sm:w-60 shrink-0">
+                <div className="w-full sm:w-64 shrink-0">
                   <select
                     id="modal-set-filter"
                     value={selectedSet}
                     onChange={(e) => setSelectedSet(e.target.value)}
                     className="w-full px-3 py-2.5 bg-slate-900 border border-slate-700 focus:border-purple-500 rounded-xl text-white text-sm outline-none font-medium cursor-pointer"
                   >
-                    <option value="">Todas as Coleções</option>
-                    {sets.map((s: any, idx: number) => (
-                      <option key={`set-opt-${s.id || 'set'}-${idx}`} value={s.id}>
-                        {s.name} ({s.id ? String(s.id).toUpperCase() : ''})
-                      </option>
+                    <option value="">Todas as Coleções (Busca Global)</option>
+                    {Object.entries(groupedSets).map(([seriesName, groupList]) => (
+                      <optgroup key={`modal-group-${seriesName}`} label={seriesName} className="bg-slate-900 font-bold text-purple-300">
+                        {groupList.map((s: any, idx: number) => (
+                          <option key={`set-opt-${s.id || 'set'}-${idx}`} value={s.id} className="text-white font-medium bg-slate-950">
+                            {s.name} ({s.id ? String(s.id).toUpperCase() : ''})
+                          </option>
+                        ))}
+                      </optgroup>
                     ))}
                   </select>
                 </div>
@@ -737,12 +761,16 @@ export default function Collection({ currentMember }: CollectionProps) {
               <div className="flex flex-wrap items-center gap-1.5">
                 <span className="text-[10px] uppercase font-bold text-slate-400 font-mono">Coleções Recentes:</span>
                 {[
-                  { label: 'Rivais Predestinados', code: 'DRI' },
-                  { label: 'Amigos de Jornada', code: 'JTG' },
-                  { label: 'Fogo Branco', code: 'WHT' },
-                  { label: 'Raio Preto', code: 'BLK' },
-                  { label: 'Evoluções Prismáticas', code: 'PRE' },
-                  { label: '30 Anos', code: '30TH' }
+                  { label: 'Todas as Coleções', code: '' },
+                  { label: 'Rivais Predestinados (DRI)', code: 'DRI' },
+                  { label: 'Amigos de Jornada (JTG)', code: 'JTG' },
+                  { label: 'Fogo Branco (WHT)', code: 'WHT' },
+                  { label: 'Raio Preto (BLK)', code: 'BLK' },
+                  { label: 'Evoluções Prismáticas (PRE)', code: 'PRE' },
+                  { label: 'Faíscas Impetuosas (SSP)', code: 'SSP' },
+                  { label: '151 (MEW)', code: 'MEW' },
+                  { label: 'Celebrações 30 Anos (30TH)', code: '30TH' },
+                  { label: 'Realeza Absoluta (CRZ)', code: 'CRZ' }
                 ].map(tag => (
                   <button
                     key={tag.code}

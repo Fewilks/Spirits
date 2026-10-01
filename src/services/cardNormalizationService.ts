@@ -14,6 +14,7 @@ import {
   SET_TPCI_TO_LOCAL_MAP,
   SET_TO_TCGDEX_MAP
 } from '../utils/cardImages';
+import { findSet } from '../utils/setSync';
 import { COMPREHENSIVE_SETS } from '../data/pokemonCatalog';
 import { CardItem } from '../types';
 
@@ -447,6 +448,11 @@ export function normalizeSetToPTCGLCode(input?: string): { tpciCode: string; was
   const rawUpper = input.trim().toUpperCase();
   if (OFFICIAL_SETS_REGISTRY[rawUpper]) {
     return { tpciCode: rawUpper, wasMappedRetroactively: false };
+  }
+
+  const found = findSet(input);
+  if (found) {
+    return { tpciCode: found.tpci, wasMappedRetroactively: found.tpci !== rawUpper };
   }
 
   const clean = input.toLowerCase().trim().replace(/[^a-z0-9]/g, '');

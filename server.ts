@@ -3,6 +3,7 @@ import path from 'path';
 import { createServer as createViteServer } from 'vite';
 import { GoogleGenAI, Type } from '@google/genai';
 import dotenv from 'dotenv';
+import { COMPREHENSIVE_SETS } from './src/data/pokemonCatalog';
 
 dotenv.config();
 
@@ -1287,40 +1288,7 @@ const SET_QUERY_ALIASES: Record<string, string> = {
   '30th-c': '30th-c'
 };
 
-// Master catalog of modern Pokémon TCG collections (2025+ Mega Evolution Era & Modern Standard)
-const COMPREHENSIVE_SETS = [
-  // 1. Coleções de Celebração de 30 Anos
-  { id: '30TH', ptcglCode: '30TH', localId: '30th', name: 'Celebrações de 30 Anos (30th Anniversary Celebration - 30TH)', series: 'Mega Evolution', releaseDate: '2026-02-27', logo: 'https://assets.tcgdex.net/en/me/30th/logo', symbol: 'https://assets.tcgdex.net/univ/me/30th/symbol' },
-  { id: '30TH-C', ptcglCode: '30TH-C', localId: '30th-c', name: 'Coleção Clássica de 30 Anos (30th Classic Collection - 30TH-C)', series: 'Mega Evolution', releaseDate: '2026-02-27' },
-
-  // 2. Nova Era Mega Evolution (Lançadas a partir de 2025 para frente)
-  { id: 'ASC', ptcglCode: 'ASC', localId: 'asc', name: 'Heróis Excelsos (Mega Evolution: Ascended Heroes - ASC)', series: 'Mega Evolution', releaseDate: '2026-01-30' },
-  { id: 'PFL', ptcglCode: 'PFL', localId: 'pfl', name: 'Fogo Fantasmagórico (Mega Evolution: Phantasmal Flames - PFL)', series: 'Mega Evolution', releaseDate: '2025-11-14' },
-  { id: 'POR', ptcglCode: 'POR', localId: 'por', name: 'Ordem Perfeita (Mega Evolution: Perfect Order - POR)', series: 'Mega Evolution', releaseDate: '2026-03-27' },
-  { id: 'MEG', ptcglCode: 'MEG', localId: 'meg', name: 'Mega Evolução Base (Mega Evolution - MEG)', series: 'Mega Evolution', releaseDate: '2025-09-26' },
-  { id: 'CRI', ptcglCode: 'CRI', localId: 'cri', name: 'Caos Ascendente (Mega Evolution: Chaos Rising - CRI)', series: 'Mega Evolution', releaseDate: '2026-05-22' },
-  { id: 'PBL', ptcglCode: 'PBL', localId: 'pbl', name: 'Escuridão Total (Mega Evolution: Pitch Black - PBL)', series: 'Mega Evolution', releaseDate: '2026-07-17' },
-
-  // 3. Expansões de 2025 de Scarlet & Violet
-  { id: 'PRE', ptcglCode: 'PRE', localId: 'sv08.5', name: 'Evoluções Prismáticas (Prismatic Evolutions - PRE)', series: 'Scarlet & Violet', releaseDate: '2025-01-17' },
-  { id: 'JTG', ptcglCode: 'JTG', localId: 'sv09', name: 'Amigos de Jornada (Journey Together - JTG)', series: 'Scarlet & Violet', releaseDate: '2025-03-28' },
-  { id: 'DRI', ptcglCode: 'DRI', localId: 'sv10', name: 'Rivais Predestinados (Destined Rivals - DRI)', series: 'Scarlet & Violet', releaseDate: '2025-05-30' },
-  { id: 'BLK', ptcglCode: 'BLK', localId: 'sv10.5b', name: 'Raio Negro (Black Bolt - BLK)', series: 'Scarlet & Violet', releaseDate: '2025-07-18' },
-  { id: 'WHT', ptcglCode: 'WHT', localId: 'sv10.5w', name: 'Fogo Branco (White Flare - WHT)', series: 'Scarlet & Violet', releaseDate: '2025-07-18' },
-
-  // 4. Formato Standard Atual (Scarlet & Violet 2023-2024)
-  { id: 'SSP', ptcglCode: 'SSP', localId: 'sv08', name: 'Faíscas Impetuosas (Surging Sparks - SSP)', series: 'Scarlet & Violet', releaseDate: '2024-11-08' },
-  { id: 'SCR', ptcglCode: 'SCR', localId: 'sv07', name: 'Coroa Estelar (Stellar Crown - SCR)', series: 'Scarlet & Violet', releaseDate: '2024-09-13' },
-  { id: 'SFA', ptcglCode: 'SFA', localId: 'sv06.5', name: 'Fábulas Nebulosas (Shrouded Fable - SFA)', series: 'Scarlet & Violet', releaseDate: '2024-08-02' },
-  { id: 'TWM', ptcglCode: 'TWM', localId: 'sv06', name: 'Máscaras do Crepúsculo (Twilight Masquerade - TWM)', series: 'Scarlet & Violet', releaseDate: '2024-05-24' },
-  { id: 'TEF', ptcglCode: 'TEF', localId: 'sv05', name: 'Forças Temporais (Temporal Forces - TEF)', series: 'Scarlet & Violet', releaseDate: '2024-03-22' },
-  { id: 'PAF', ptcglCode: 'PAF', localId: 'sv04.5', name: 'Destinos de Paldea (Paldean Fates - PAF)', series: 'Scarlet & Violet', releaseDate: '2024-01-26' },
-  { id: 'PAR', ptcglCode: 'PAR', localId: 'sv04', name: 'Fenda Paradoxal (Paradox Rift - PAR)', series: 'Scarlet & Violet', releaseDate: '2023-11-03' },
-  { id: 'MEW', ptcglCode: 'MEW', localId: 'sv03.5', name: '151 (Pokémon 151 - MEW)', series: 'Scarlet & Violet', releaseDate: '2023-09-22' },
-  { id: 'OBF', ptcglCode: 'OBF', localId: 'sv03', name: 'Obsidiana em Chamas (Obsidian Flames - OBF)', series: 'Scarlet & Violet', releaseDate: '2023-08-11' },
-  { id: 'PAL', ptcglCode: 'PAL', localId: 'sv02', name: 'Evoluções em Paldea (Paldea Evolved - PAL)', series: 'Scarlet & Violet', releaseDate: '2023-06-09' },
-  { id: 'SVI', ptcglCode: 'SVI', localId: 'sv01', name: 'Escarlate e Violeta Base (SVI)', series: 'Scarlet & Violet', releaseDate: '2023-03-31' }
-];
+// Master catalog of Pokémon TCG collections is imported from ./src/data/pokemonCatalog
 
 function normalizeSearchTerm(str: string): string {
   return (str || '')
@@ -1706,76 +1674,9 @@ Retorne um array JSON contendo até 12 cartas com:
   res.json([]);
 });
 
-// Fetch all available Pokémon TCG sets with modern Mega Evolution & Scarlet/Violet expansions strictly prioritized
+// Fetch all available Pokémon TCG sets with modern Mega Evolution & all historical expansions
 app.get('/api/pokemon/sets', async (req, res) => {
-  try {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 3000);
-    const response = await fetch('https://api.pokemontcg.io/v2/sets?orderBy=-releaseDate', {
-      signal: controller.signal
-    });
-    clearTimeout(timeoutId);
-
-    if (response.ok) {
-      const data = await response.json();
-      if (data.data && Array.isArray(data.data) && data.data.length > 0) {
-        // STRICT FILTER: Keep only modern sets (Mega Evolution or Scarlet & Violet series, or release date >= 2023)
-        // REJECT old XY, Black & White, Sun & Moon, Diamond & Pearl, etc.
-        const fetchedSets = data.data
-          .filter((s: any) => {
-            const series = (s.series || '').toLowerCase();
-            const id = (s.id || '').toLowerCase();
-            const release = s.releaseDate || '';
-            // Reject any XY sets or classic vintage sets
-            if (series === 'xy' || id.startsWith('xy') || series === 'black & white' || series === 'sun & moon' || series === 'sword & shield') {
-              return false;
-            }
-            return series === 'mega evolution' || series === 'scarlet & violet' || release >= '2023';
-          })
-          .map((s: any) => {
-            const localId = (s.id || '').toLowerCase();
-            const ptcglCode = LOCAL_TO_TPCI_SET_MAP[localId] || s.id.toUpperCase();
-            return {
-              id: ptcglCode,
-              ptcglCode: ptcglCode,
-              localId: localId,
-              name: s.name,
-              series: s.series,
-              releaseDate: s.releaseDate,
-              logo: s.images?.logo,
-              symbol: s.images?.symbol
-            };
-          });
-        
-        // Merge with COMPREHENSIVE_SETS ensuring requested new collections (Heróis Excelsos, Fogo Fantasmagórico, Perfect Order, Mega Evolução Base) are at the top
-        const seen = new Set<string>();
-        const combined: any[] = [];
-
-        for (const exp of COMPREHENSIVE_SETS) {
-          const key = exp.id.toUpperCase();
-          if (!seen.has(key)) {
-            seen.add(key);
-            combined.push(exp);
-          }
-        }
-
-        for (const s of fetchedSets) {
-          const key = s.id.toUpperCase();
-          if (!seen.has(key)) {
-            seen.add(key);
-            combined.push(s);
-          }
-        }
-
-        return res.json(combined);
-      }
-    }
-  } catch (err) {
-    console.warn('External pokemontcg.io API unavailable or slow, serving comprehensive expansions catalog:', (err as Error).message);
-  }
-
-  // Fallback to modern collections
-  res.json(COMPREHENSIVE_SETS);
+  return res.json(COMPREHENSIVE_SETS);
 });
 
 // Parse TCG Live / Limitless text lists using Gemini (with advanced Regex fallback)

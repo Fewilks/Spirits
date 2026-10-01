@@ -1,230 +1,351 @@
 // ============================================================================
-// pokemonLocalApi.ts — Porta os endpoints do server.ts pro navegador
+// pokemonLocalApi.ts — Interceptor de API TCG para GitHub Pages e offline
 // ============================================================================
+// Garante que 100% das coleções (Base até Mega Evolution & 30 Anos & Pocket)
+// e cartas pesquisadas estejam disponíveis para o usuário no GitHub Pages,
+// com suporte a busca por coleção, busca por nome, busca por código PTCGL
+// e fallback transparente entre TCGdex, PokémonTCG.io e catálogo local.
 
-import { COMPREHENSIVE_SETS as CATALOG_SETS } from '../data/pokemonCatalog';
-
-// ----------------------------------------------------------------------------
-// 1. MAPAS DE SET (iguais ao server.ts)
-// ----------------------------------------------------------------------------
-
-const SET_TO_TCGDEX_MAP: Record<string, { series: string; set: string }> = {
-  'ASC': { series: 'me', set: 'me02.5' },
-  'PFL': { series: 'me', set: 'me02' },
-  'POR': { series: 'me', set: 'me03' },
-  'MEG': { series: 'me', set: 'me01' },
-  'CRI': { series: 'me', set: 'me04' },
-  'PBL': { series: 'me', set: 'me05' },
-  'PRE': { series: 'sv', set: 'sv08.5' },
-  'JTG': { series: 'sv', set: 'sv09' },
-  'DRI': { series: 'sv', set: 'sv09.5' },
-  'BLK': { series: 'sv', set: 'sv10' },
-  'WHT': { series: 'sv', set: 'sv10.5' },
-  'SSP': { series: 'sv', set: 'sv08' },
-  'SCR': { series: 'sv', set: 'sv07' },
-  'SFA': { series: 'sv', set: 'sv06.5' },
-  'TWM': { series: 'sv', set: 'sv06' },
-  'TEF': { series: 'sv', set: 'sv05' },
-  'PAF': { series: 'sv', set: 'sv04.5' },
-  'PAR': { series: 'sv', set: 'sv04' },
-  'MEW': { series: 'sv', set: 'sv03.5' },
-  'OBF': { series: 'sv', set: 'sv03' },
-  'PAL': { series: 'sv', set: 'sv02' },
-  'SVI': { series: 'sv', set: 'sv01' },
-  'SVE': { series: 'sv', set: 'sve' },
-  'SVP': { series: 'sv', set: 'svp' },
-  'CRZ': { series: 'swsh', set: 'swsh12.5' },
-  'SIT': { series: 'swsh', set: 'swsh12' },
-  'LOR': { series: 'swsh', set: 'swsh11' },
-  'ASR': { series: 'swsh', set: 'swsh10' },
-  'BRS': { series: 'swsh', set: 'swsh09' },
-  'FST': { series: 'swsh', set: 'swsh08' },
-  'EVS': { series: 'swsh', set: 'swsh07' },
-  'CRE': { series: 'swsh', set: 'swsh06' },
-  'BST': { series: 'swsh', set: 'swsh05' },
-  '30TH': { series: 'me', set: '30th' },
-  '30TH-C': { series: 'me', set: '30th-c' },
-};
-
-const TPCI_TO_LOCAL_SET_MAP: Record<string, string> = {
-  'SVI': 'sv1', 'PAL': 'sv2', 'OBF': 'sv3', 'MEW': 'sv3pt5', 'PAR': 'sv4',
-  'PAF': 'sv45', 'TEF': 'sv5', 'TWM': 'sv6', 'SFA': 'sv6pt5', 'SCR': 'sv7',
-  'SSP': 'sv8', 'PRE': 'sv8pt5', 'SVE': 'sve', 'SVP': 'svp',
-  'ME1': 'me1', 'ME2': 'me2', 'ASC': 'asc', 'PFL': 'pfl', 'POR': 'por',
-  'MEG': 'meg', 'CRI': 'cri', 'PBL': 'pbl', '30TH': '30th', '30TH-C': '30th-c',
-  'JTG': 'jtg', 'DRI': 'dri', 'BLK': 'blk', 'WHT': 'wht',
-  'SSH': 'swsh1', 'RCL': 'swsh2', 'DAA': 'swsh3', 'CPA': 'swsh35', 'VIV': 'swsh4',
-  'SHF': 'swsh45', 'BST': 'swsh5', 'CRE': 'swsh6', 'EVS': 'swsh7', 'FST': 'swsh8',
-  'BRS': 'swsh9', 'ASR': 'swsh10', 'PGO': 'pgo', 'LOR': 'swsh11', 'CEL': 'cel',
-  'SIT': 'swsh12', 'CRZ': 'swsh12pt5',
-};
-
-const LOCAL_TO_TPCI_SET_MAP: Record<string, string> = {
-  'sv1': 'SVI', 'sv2': 'PAL', 'sv3': 'OBF', 'sv3pt5': 'MEW', 'sv4': 'PAR',
-  'sv45': 'PAF', 'sv5': 'TEF', 'sv6': 'TWM', 'sv6pt5': 'SFA', 'sv7': 'SCR',
-  'sv8': 'SSP', 'sv8pt5': 'PRE', 'pre': 'PRE', 'sfa': 'SFA', 'twm': 'TWM',
-  'tef': 'TEF', 'paf': 'PAF', 'par': 'PAR', 'obf': 'OBF', 'pal': 'PAL', 'sve': 'SVE',
-  'me1': 'ME1', 'me2': 'ME2', 'me2.5': 'ME2', 'asc': 'ASC', 'pfl': 'PFL',
-  'por': 'POR', 'meg': 'MEG', 'cri': 'CRI', 'pbl': 'PBL',
-  '30th': '30TH', '30th-c': '30TH-C',
-  'jtg': 'JTG', 'dri': 'DRI', 'blk': 'BLK', 'wht': 'WHT',
-  'swsh12pt5': 'CRZ', 'crz': 'CRZ', 'swsh12': 'SIT', 'sit': 'SIT',
-  'swsh11': 'LOR', 'lor': 'LOR', 'swsh10': 'ASR', 'asr': 'ASR',
-  'swsh9': 'BRS', 'brs': 'BRS',
-};
-
-const SET_QUERY_ALIASES: Record<string, string> = {
-  'herois excelsos': 'asc', 'heróis excelsos': 'asc', 'herois': 'asc',
-  'ascended heroes': 'asc', 'asc': 'asc',
-  'fogo fantasmagorico': 'pfl', 'fogo fantasmagórico': 'pfl', 'phantasmal flames': 'pfl', 'pfl': 'pfl',
-  'ordem perfeita': 'por', 'perfect order': 'por', 'por': 'por',
-  'mega evolucao': 'meg', 'mega evolução': 'meg', 'mega evolution': 'meg', 'meg': 'meg',
-  'caos ascendente': 'cri', 'chaos rising': 'cri', 'cri': 'cri',
-  'escuridao total': 'pbl', 'escuridão total': 'pbl', 'pitch black': 'pbl', 'pbl': 'pbl',
-  'evolucoes prismaticas': 'pre', 'evoluções prismáticas': 'pre', 'prismatic evolutions': 'pre', 'pre': 'pre',
-  'jornada em conjunto': 'jtg', 'journey together': 'jtg', 'jtg': 'jtg',
-  'rivais destinados': 'dri', 'destined rivals': 'dri', 'dri': 'dri',
-  'raio negro': 'blk', 'black bolt': 'blk', 'blk': 'blk',
-  'chama branca': 'wht', 'white flare': 'wht', 'wht': 'wht',
-  'celebracoes de 30 anos': '30th', 'celebrações de 30 anos': '30th', '30 anos': '30th',
-  '30th': '30th', '30th-c': '30th-c',
-};
+import { 
+  COMPREHENSIVE_SETS, 
+  MODERN_CARDS_CATALOG, 
+  normalizeSearchTerm,
+  TPCI_TO_LOCAL_SET_MAP,
+  LOCAL_TO_TPCI_SET_MAP,
+  SET_QUERY_ALIASES 
+} from '../data/pokemonCatalog';
+import { 
+  SET_SYNC_TABLE, 
+  findSet, 
+  tcgdexUrl, 
+  ptcgIoUrl, 
+  limitlessUrl, 
+  CARD_BACK_URL 
+} from '../utils/setSync';
+import { 
+  normalizePokemonCard, 
+  normalizeSetToPTCGLCode, 
+  normalizeCardNumber 
+} from './cardNormalizationService';
+import { isStaticDeployment } from './limitlessApi';
 
 // ----------------------------------------------------------------------------
-// 2. COMPREHENSIVE_SETS — usa o catálogo local se existir, senão fallback interno
+// 1. MAPA DINÂMICO COMPLETO PARA TCGDEX (TODAS AS COLEÇÕES HISTÓRICAS E MODERNAS)
 // ----------------------------------------------------------------------------
 
-const FALLBACK_SETS = [
-  { id: '30TH', ptcglCode: '30TH', localId: '30th', name: 'Celebrações de 30 Anos (30th Anniversary Celebration - 30TH)', series: 'Mega Evolution', releaseDate: '2026-02-27' },
-  { id: '30TH-C', ptcglCode: '30TH-C', localId: '30th-c', name: 'Coleção Clássica de 30 Anos (30TH-C)', series: 'Mega Evolution', releaseDate: '2026-02-27' },
-  { id: 'ASC', ptcglCode: 'ASC', localId: 'asc', name: 'Heróis Excelsos (Ascended Heroes - ASC)', series: 'Mega Evolution', releaseDate: '2026-01-30' },
-  { id: 'PFL', ptcglCode: 'PFL', localId: 'pfl', name: 'Fogo Fantasmagórico (Phantasmal Flames - PFL)', series: 'Mega Evolution', releaseDate: '2025-11-14' },
-  { id: 'POR', ptcglCode: 'POR', localId: 'por', name: 'Ordem Perfeita (Perfect Order - POR)', series: 'Mega Evolution', releaseDate: '2026-03-27' },
-  { id: 'MEG', ptcglCode: 'MEG', localId: 'meg', name: 'Mega Evolução Base (MEG)', series: 'Mega Evolution', releaseDate: '2025-09-26' },
-  { id: 'CRI', ptcglCode: 'CRI', localId: 'cri', name: 'Caos Ascendente (Chaos Rising - CRI)', series: 'Mega Evolution', releaseDate: '2026-05-22' },
-  { id: 'PBL', ptcglCode: 'PBL', localId: 'pbl', name: 'Escuridão Total (Pitch Black - PBL)', series: 'Mega Evolution', releaseDate: '2026-07-17' },
-  { id: 'PRE', ptcglCode: 'PRE', localId: 'pre', name: 'Evoluções Prismáticas (Prismatic Evolutions - PRE)', series: 'Scarlet & Violet', releaseDate: '2025-01-17' },
-  { id: 'JTG', ptcglCode: 'JTG', localId: 'jtg', name: 'Jornada em Conjunto (Journey Together - JTG)', series: 'Scarlet & Violet', releaseDate: '2025-03-28' },
-  { id: 'DRI', ptcglCode: 'DRI', localId: 'dri', name: 'Rivais Destinados (Destined Rivals - DRI)', series: 'Scarlet & Violet', releaseDate: '2025-05-30' },
-  { id: 'BLK', ptcglCode: 'BLK', localId: 'blk', name: 'Raio Negro (Black Bolt - BLK)', series: 'Scarlet & Violet', releaseDate: '2025-07-18' },
-  { id: 'WHT', ptcglCode: 'WHT', localId: 'wht', name: 'Chama Branca (White Flare - WHT)', series: 'Scarlet & Violet', releaseDate: '2025-07-18' },
-  { id: 'SSP', ptcglCode: 'SSP', localId: 'sv8', name: 'Faíscas Impetuosas (Surging Sparks - SSP)', series: 'Scarlet & Violet', releaseDate: '2024-11-08' },
-  { id: 'SCR', ptcglCode: 'SCR', localId: 'sv7', name: 'Coroa Estelar (Stellar Crown - SCR)', series: 'Scarlet & Violet', releaseDate: '2024-09-13' },
-  { id: 'SFA', ptcglCode: 'SFA', localId: 'sv6pt5', name: 'Fábulas Nebulosas (Shrouded Fable - SFA)', series: 'Scarlet & Violet', releaseDate: '2024-08-02' },
-  { id: 'TWM', ptcglCode: 'TWM', localId: 'sv6', name: 'Máscaras do Crepúsculo (Twilight Masquerade - TWM)', series: 'Scarlet & Violet', releaseDate: '2024-05-24' },
-  { id: 'TEF', ptcglCode: 'TEF', localId: 'sv5', name: 'Forças Temporais (Temporal Forces - TEF)', series: 'Scarlet & Violet', releaseDate: '2024-03-22' },
-  { id: 'PAF', ptcglCode: 'PAF', localId: 'sv45', name: 'Destinos de Paldea (Paldean Fates - PAF)', series: 'Scarlet & Violet', releaseDate: '2024-01-26' },
-  { id: 'PAR', ptcglCode: 'PAR', localId: 'sv4', name: 'Fenda Paradoxal (Paradox Rift - PAR)', series: 'Scarlet & Violet', releaseDate: '2023-11-03' },
-  { id: 'MEW', ptcglCode: 'MEW', localId: 'sv3pt5', name: '151 (MEW)', series: 'Scarlet & Violet', releaseDate: '2023-09-22' },
-  { id: 'OBF', ptcglCode: 'OBF', localId: 'sv3', name: 'Obsidiana em Chamas (Obsidian Flames - OBF)', series: 'Scarlet & Violet', releaseDate: '2023-08-11' },
-  { id: 'PAL', ptcglCode: 'PAL', localId: 'sv2', name: 'Evoluções em Paldea (Paldea Evolved - PAL)', series: 'Scarlet & Violet', releaseDate: '2023-06-09' },
-  { id: 'SVI', ptcglCode: 'SVI', localId: 'sv1', name: 'Escarlate e Violeta Base (SVI)', series: 'Scarlet & Violet', releaseDate: '2023-03-31' },
-];
+const SET_TO_TCGDEX_MAP: Record<string, { series: string; set: string }> = (() => {
+  const map: Record<string, { series: string; set: string }> = {};
+  for (const e of SET_SYNC_TABLE) {
+    if (!e.tcgdexSeries || !e.tcgdexSet) continue;
+    const entry = { series: e.tcgdexSeries, set: e.tcgdexSet };
+    map[e.tpci] = entry;
+    map[e.tpci.toUpperCase()] = entry;
+    map[e.tpci.toLowerCase()] = entry;
+    map[e.tcgdexSet] = entry;
+    map[e.tcgdexSet.toLowerCase()] = entry;
+    if (e.ptcgIo) {
+      map[e.ptcgIo] = entry;
+      map[e.ptcgIo.toLowerCase()] = entry;
+    }
+  }
+  return map;
+})();
 
-const COMPREHENSIVE_SETS = Array.isArray(CATALOG_SETS) && CATALOG_SETS.length > 0
-  ? (CATALOG_SETS as any[])
-  : FALLBACK_SETS;
-
-// ----------------------------------------------------------------------------
-// 3. HELPERS
-// ----------------------------------------------------------------------------
-
-function getTCGdexImageUrl(setCode: string, setNumber: string | number, lang: 'pt' | 'en' = 'pt'): string {
-  if (!setCode || !setNumber) return 'https://images.pokemontcg.io/card-back.png';
-  const cleanSet = String(setCode).trim();
-  const mapping =
-    SET_TO_TCGDEX_MAP[cleanSet] ||
-    SET_TO_TCGDEX_MAP[cleanSet.toUpperCase()] ||
-    SET_TO_TCGDEX_MAP[cleanSet.toLowerCase()];
-
-  const rawNum = String(setNumber).trim().replace(/^#/, '');
-  const cleanNum = rawNum.replace(/^0+/, '') || '1';
-  const paddedNum = cleanNum.padStart(3, '0');
-
-  const isSvOrMe = mapping ? (mapping.series === 'sv' || mapping.series === 'me') : /^(sv|me)/i.test(cleanSet);
-  const finalNum = isSvOrMe ? paddedNum : cleanNum;
-
-  if (mapping) return `https://assets.tcgdex.net/${lang}/${mapping.series}/${mapping.set}/${finalNum}/high.webp`;
-  return `https://assets.tcgdex.net/${lang}/sv/${cleanSet.toLowerCase()}/${finalNum}/high.webp`;
+// Helper para montar scan de alta resolução
+function resolveCardImageUrl(setCode: string, setNumber: string | number, lang: 'pt' | 'en' = 'pt'): string {
+  if (!setCode || !setNumber) return CARD_BACK_URL;
+  const tcgdex = tcgdexUrl(setCode, setNumber, lang);
+  if (tcgdex) return tcgdex;
+  const ptIo = ptcgIoUrl(setCode, setNumber);
+  if (ptIo) return ptIo;
+  const lim = limitlessUrl(setCode, setNumber);
+  if (lim) return lim;
+  return CARD_BACK_URL;
 }
 
-function normalizeSearchTerm(str: string): string {
-  return (str || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
-}
-
-// Cache em memória para sets TCGdex completos
+// Cache em memória para sets e pesquisas completas
 const TCGDEX_SET_CACHE = new Map<string, any[]>();
+const CARD_QUERY_CACHE = new Map<string, any[]>();
 
+/**
+ * Busca todas as cartas de uma coleção específica no TCGdex com fallback no Pokemontcg.io
+ */
 async function fetchTcgdexCompleteSet(
   tcgdexSetId: string,
   series: string,
   tpciSetCode: string,
   setNameFallback: string
 ): Promise<any[]> {
-  const cacheKey = `${series}-${tcgdexSetId}`;
-  if (TCGDEX_SET_CACHE.has(cacheKey)) return TCGDEX_SET_CACHE.get(cacheKey)!;
+  const cacheKey = `${series}-${tcgdexSetId}`.toLowerCase();
+  if (TCGDEX_SET_CACHE.has(cacheKey)) {
+    return TCGDEX_SET_CACHE.get(cacheKey)!;
+  }
 
   let cardsData: any[] = [];
   const ptNameMap = new Map<string, string>();
   const ptImageMap = new Map<string, string>();
 
-  const [ptResult, enResult] = await Promise.allSettled([
-    fetch(`https://api.tcgdex.net/v2/pt/sets/${tcgdexSetId}`).then(r => r.ok ? r.json() : null),
-    fetch(`https://api.tcgdex.net/v2/en/sets/${tcgdexSetId}`).then(r => r.ok ? r.json() : null),
-  ]);
+  // 1. Tentar TCGdex em Português e Inglês com timeout
+  try {
+    const ptController = new AbortController();
+    const ptTimer = setTimeout(() => ptController.abort(), 6000);
+    const enController = new AbortController();
+    const enTimer = setTimeout(() => enController.abort(), 6000);
 
-  const ptData = ptResult.status === 'fulfilled' ? ptResult.value : null;
-  const enData = enResult.status === 'fulfilled' ? enResult.value : null;
+    const [ptResult, enResult] = await Promise.allSettled([
+      fetch(`https://api.tcgdex.net/v2/pt/sets/${tcgdexSetId}`, { signal: ptController.signal }).then(r => r.ok ? r.json() : null),
+      fetch(`https://api.tcgdex.net/v2/en/sets/${tcgdexSetId}`, { signal: enController.signal }).then(r => r.ok ? r.json() : null),
+    ]);
+    clearTimeout(ptTimer);
+    clearTimeout(enTimer);
 
-  if (ptData?.cards) {
-    for (const c of ptData.cards) {
-      const cleanNum = String(c.localId || '').replace(/^0+/, '');
-      if (cleanNum && c.name) ptNameMap.set(cleanNum, c.name);
-      if (cleanNum && c.image) ptImageMap.set(cleanNum, `${c.image}/high.webp`);
-    }
-    cardsData = ptData.cards;
-  }
+    const ptData = ptResult.status === 'fulfilled' ? ptResult.value : null;
+    const enData = enResult.status === 'fulfilled' ? enResult.value : null;
 
-  if (enData?.cards && enData.cards.length > cardsData.length) {
-    cardsData = enData.cards;
-  }
-
-  if (cardsData.length === 0) return [];
-
-  const isSvOrMe = series === 'sv' || series === 'me';
-  const mapped = cardsData.map((c: any) => {
-    const rawLocalId = String(c.localId || '').trim();
-    const cleanNum = rawLocalId.replace(/^0+/, '') || '1';
-    const formattedNum = isSvOrMe && /^\d+$/.test(rawLocalId) ? cleanNum.padStart(3, '0') : rawLocalId;
-
-    let imageUrl = ptImageMap.get(cleanNum) || '';
-    if (!imageUrl) {
-      if (c.image) imageUrl = `${c.image}/high.webp`;
-      else imageUrl = `https://assets.tcgdex.net/pt/${series}/${tcgdexSetId}/${formattedNum}/high.webp`;
+    if (ptData?.cards && Array.isArray(ptData.cards)) {
+      for (const c of ptData.cards) {
+        const rawNum = String(c.localId || c.id?.split('-')[1] || '').trim();
+        const cleanNum = rawNum.replace(/^0+/, '') || '1';
+        if (cleanNum && c.name) ptNameMap.set(cleanNum, c.name);
+        if (cleanNum && c.image) ptImageMap.set(cleanNum, `${c.image}/high.webp`);
+      }
+      cardsData = ptData.cards;
     }
 
-    const finalName = ptNameMap.get(cleanNum) || c.name;
+    if (enData?.cards && Array.isArray(enData.cards) && enData.cards.length > cardsData.length) {
+      cardsData = enData.cards;
+    }
+  } catch (err) {
+    console.warn('[pokemonLocalApi] Erro na consulta TCGdex do set:', err);
+  }
 
-    return {
-      id: `${tpciSetCode}-${formattedNum}`,
-      localId: c.id || `${tcgdexSetId}-${formattedNum}`,
-      name: finalName,
-      imageUrl,
-      setCode: tpciSetCode,
-      setName: setNameFallback,
-      setNumber: formattedNum,
-      tpciCode: `${tpciSetCode} ${formattedNum}`,
-      tpciSetCode,
-      localSetId: tcgdexSetId,
-    };
+  // 2. Se TCGdex retornou cartas, mapear
+  if (cardsData.length > 0) {
+    const isSvOrMe = series === 'sv' || series === 'me';
+    const mapped = cardsData.map((c: any) => {
+      const rawLocalId = String(c.localId || c.id?.split('-')[1] || '').trim();
+      const cleanNum = rawLocalId.replace(/^0+/, '') || '1';
+      const formattedNum = isSvOrMe && /^\d+$/.test(rawLocalId) ? cleanNum.padStart(3, '0') : rawLocalId;
+
+      let imageUrl = ptImageMap.get(cleanNum) || '';
+      if (!imageUrl) {
+        if (c.image) imageUrl = `${c.image}/high.webp`;
+        else imageUrl = resolveCardImageUrl(tpciSetCode, formattedNum, 'pt');
+      }
+
+      const finalName = ptNameMap.get(cleanNum) || c.name;
+
+      return {
+        id: `${tpciSetCode}-${formattedNum}`,
+        localId: c.id || `${tcgdexSetId}-${formattedNum}`,
+        name: finalName,
+        imageUrl,
+        setCode: tpciSetCode,
+        setName: setNameFallback,
+        setNumber: formattedNum,
+        tpciCode: `${tpciSetCode} ${formattedNum}`,
+        tpciSetCode,
+        localSetId: tcgdexSetId,
+      };
+    });
+
+    TCGDEX_SET_CACHE.set(cacheKey, mapped);
+    return mapped;
+  }
+
+  // 3. Fallback no PokémonTCG.io se o set não estiver no TCGdex
+  const setEntry = findSet(tpciSetCode);
+  if (setEntry?.ptcgIo) {
+    try {
+      const ioController = new AbortController();
+      const ioTimer = setTimeout(() => ioController.abort(), 6000);
+      const ioRes = await fetch(`https://api.pokemontcg.io/v2/cards?q=set.id:${setEntry.ptcgIo}&pageSize=250`, {
+        signal: ioController.signal
+      });
+      clearTimeout(ioTimer);
+
+      if (ioRes.ok) {
+        const ioData = await ioRes.json();
+        if (Array.isArray(ioData?.data) && ioData.data.length > 0) {
+          const mappedIo = ioData.data.map((c: any) => ({
+            id: `${tpciSetCode}-${c.number}`,
+            localId: c.id,
+            name: c.name,
+            imageUrl: c.images?.small || c.images?.large || resolveCardImageUrl(tpciSetCode, c.number),
+            setCode: tpciSetCode,
+            setName: setNameFallback || c.set?.name || tpciSetCode,
+            setNumber: c.number,
+            tpciCode: `${tpciSetCode} ${c.number}`,
+            tpciSetCode,
+            localSetId: setEntry.ptcgIo,
+          }));
+          TCGDEX_SET_CACHE.set(cacheKey, mappedIo);
+          return mappedIo;
+        }
+      }
+    } catch {
+      // Ignora erro suavemente
+    }
+  }
+
+  // 4. Fallback no catálogo local consolidado
+  const localMatches = MODERN_CARDS_CATALOG.filter(c => 
+    c.setCode.toUpperCase() === tpciSetCode.toUpperCase() ||
+    (c.localSetId && c.localSetId.toLowerCase() === tcgdexSetId.toLowerCase())
+  );
+  if (localMatches.length > 0) {
+    TCGDEX_SET_CACHE.set(cacheKey, localMatches);
+    return localMatches;
+  }
+
+  return [];
+}
+
+/**
+ * Busca cartas por nome através de TCGdex, Pokemontcg.io e catálogo local
+ */
+async function searchCardsByQuery(nameQuery: string): Promise<any[]> {
+  const normQ = normalizeSearchTerm(nameQuery);
+  if (!normQ) return [];
+
+  const cacheKey = normQ;
+  if (CARD_QUERY_CACHE.has(cacheKey)) {
+    return CARD_QUERY_CACHE.get(cacheKey)!;
+  }
+
+  const resultsMap = new Map<string, any>();
+
+  // 1. Catálogo local instantâneo
+  const localMatches = MODERN_CARDS_CATALOG.filter(c => {
+    const cn = normalizeSearchTerm(c.name);
+    return cn.includes(normQ) || c.id.toLowerCase().includes(normQ);
+  });
+  for (const c of localMatches) {
+    const key = `${c.setCode}-${c.setNumber}`.toUpperCase();
+    resultsMap.set(key, c);
+  }
+
+  // 2. Consulta paralela na API pública do TCGdex (pt e en) e Pokemontcg.io
+  try {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 6500);
+
+    const [ptRes, enRes, ioRes] = await Promise.allSettled([
+      fetch(`https://api.tcgdex.net/v2/pt/cards?name=${encodeURIComponent(nameQuery)}`, { signal: controller.signal })
+        .then(r => r.ok ? r.json() : []),
+      fetch(`https://api.tcgdex.net/v2/en/cards?name=${encodeURIComponent(nameQuery)}`, { signal: controller.signal })
+        .then(r => r.ok ? r.json() : []),
+      fetch(`https://api.pokemontcg.io/v2/cards?q=name:"*${encodeURIComponent(nameQuery)}*"&pageSize=40`, { signal: controller.signal })
+        .then(r => r.ok ? r.json() : { data: [] })
+    ]);
+    clearTimeout(timer);
+
+    // Processa TCGdex PT
+    const ptCards = ptRes.status === 'fulfilled' && Array.isArray(ptRes.value) ? ptRes.value : [];
+    for (const c of ptCards) {
+      if (!c.name) continue;
+      const rawId = String(c.id || '');
+      const rawSetPart = rawId.includes('-') ? rawId.substring(0, rawId.lastIndexOf('-')) : '';
+      const setEntry = findSet(rawSetPart) || findSet(c.localId);
+      const tpciCode = setEntry?.tpci || rawSetPart.toUpperCase() || 'SVI';
+      const cleanNum = String(c.localId || '').replace(/^0+/, '') || '1';
+      const isSvOrMe = setEntry?.era === 'sv' || setEntry?.era === 'me';
+      const formattedNum = isSvOrMe && /^\d+$/.test(cleanNum) ? cleanNum.padStart(3, '0') : cleanNum;
+
+      const cardKey = `${tpciCode}-${formattedNum}`.toUpperCase();
+      const imgUrl = c.image ? `${c.image}/high.webp` : resolveCardImageUrl(tpciCode, formattedNum, 'pt');
+
+      resultsMap.set(cardKey, {
+        id: cardKey,
+        localId: c.id,
+        name: c.name,
+        imageUrl: imgUrl,
+        setCode: tpciCode,
+        setName: setEntry?.namePt || setEntry?.name || tpciCode,
+        setNumber: formattedNum,
+        tpciCode: `${tpciCode} ${formattedNum}`,
+        tpciSetCode: tpciCode,
+        localSetId: setEntry?.ptcgIo || rawSetPart
+      });
+    }
+
+    // Processa TCGdex EN (para cartas não traduzidas no TCGdex PT)
+    const enCards = enRes.status === 'fulfilled' && Array.isArray(enRes.value) ? enRes.value : [];
+    for (const c of enCards) {
+      if (!c.name) continue;
+      const rawId = String(c.id || '');
+      const rawSetPart = rawId.includes('-') ? rawId.substring(0, rawId.lastIndexOf('-')) : '';
+      const setEntry = findSet(rawSetPart) || findSet(c.localId);
+      const tpciCode = setEntry?.tpci || rawSetPart.toUpperCase() || 'SVI';
+      const cleanNum = String(c.localId || '').replace(/^0+/, '') || '1';
+      const isSvOrMe = setEntry?.era === 'sv' || setEntry?.era === 'me';
+      const formattedNum = isSvOrMe && /^\d+$/.test(cleanNum) ? cleanNum.padStart(3, '0') : cleanNum;
+
+      const cardKey = `${tpciCode}-${formattedNum}`.toUpperCase();
+      if (!resultsMap.has(cardKey)) {
+        const imgUrl = c.image ? `${c.image}/high.webp` : resolveCardImageUrl(tpciCode, formattedNum, 'en');
+        resultsMap.set(cardKey, {
+          id: cardKey,
+          localId: c.id,
+          name: c.name,
+          imageUrl: imgUrl,
+          setCode: tpciCode,
+          setName: setEntry?.namePt || setEntry?.name || tpciCode,
+          setNumber: formattedNum,
+          tpciCode: `${tpciCode} ${formattedNum}`,
+          tpciSetCode: tpciCode,
+          localSetId: setEntry?.ptcgIo || rawSetPart
+        });
+      }
+    }
+
+    // Processa Pokemontcg.io
+    const ioData = ioRes.status === 'fulfilled' && ioRes.value?.data ? ioRes.value.data : [];
+    for (const c of ioData) {
+      if (!c.name) continue;
+      const setEntry = findSet(c.set?.id) || findSet(c.set?.name);
+      const tpciCode = setEntry?.tpci || c.set?.id?.toUpperCase() || 'SVI';
+      const cleanNum = String(c.number || '').replace(/^0+/, '') || '1';
+      const isSvOrMe = setEntry?.era === 'sv' || setEntry?.era === 'me';
+      const formattedNum = isSvOrMe && /^\d+$/.test(cleanNum) ? cleanNum.padStart(3, '0') : cleanNum;
+
+      const cardKey = `${tpciCode}-${formattedNum}`.toUpperCase();
+      if (!resultsMap.has(cardKey)) {
+        const imgUrl = c.images?.small || c.images?.large || resolveCardImageUrl(tpciCode, formattedNum, 'en');
+        resultsMap.set(cardKey, {
+          id: cardKey,
+          localId: c.id,
+          name: c.name,
+          imageUrl: imgUrl,
+          setCode: tpciCode,
+          setName: setEntry?.namePt || c.set?.name || setEntry?.name || tpciCode,
+          setNumber: formattedNum,
+          tpciCode: `${tpciCode} ${formattedNum}`,
+          tpciSetCode: tpciCode,
+          localSetId: c.set?.id
+        });
+      }
+    }
+  } catch (err) {
+    console.warn('[pokemonLocalApi] Erro na busca remota por nome:', err);
+  }
+
+  const finalCards = Array.from(resultsMap.values());
+
+  // Ordenar priorizando correspondências exatas e cartas recentes
+  finalCards.sort((a, b) => {
+    const aExact = normalizeSearchTerm(a.name) === normQ ? 1 : 0;
+    const bExact = normalizeSearchTerm(b.name) === normQ ? 1 : 0;
+    if (aExact !== bExact) return bExact - aExact;
+    return (b.id || '').localeCompare(a.id || '');
   });
 
-  TCGDEX_SET_CACHE.set(cacheKey, mapped);
-  return mapped;
+  CARD_QUERY_CACHE.set(cacheKey, finalCards);
+  return finalCards;
 }
 
 // ----------------------------------------------------------------------------
-// 4. META DECKS (fallback)
+// 2. META DECKS (fallback padrão)
 // ----------------------------------------------------------------------------
 
 const metaDecks = [
@@ -237,30 +358,7 @@ const metaDecks = [
 ];
 
 // ----------------------------------------------------------------------------
-// 5. FALLBACK CARDS
-// ----------------------------------------------------------------------------
-
-const fallbackCards: any[] = [
-  { id: 'OBF-125', name: 'Charizard ex', setCode: 'OBF', setName: 'Obsidian Flames', setNumber: '125', localSetId: 'sv3' },
-  { id: 'TWM-130', name: 'Dragapult ex', setCode: 'TWM', setName: 'Twilight Masquerade', setNumber: '130', localSetId: 'sv6' },
-  { id: 'OBF-164', name: 'Pidgeot ex', setCode: 'OBF', setName: 'Obsidian Flames', setNumber: '164', localSetId: 'sv3' },
-  { id: 'SFA-038', name: 'Fezandipiti ex', setCode: 'SFA', setName: 'Shrouded Fable', setNumber: '038', localSetId: 'sv6pt5' },
-  { id: 'SCR-128', name: 'Terapagos ex', setCode: 'SCR', setName: 'Stellar Crown', setNumber: '128', localSetId: 'sv7' },
-  { id: 'SSP-057', name: 'Pikachu ex', setCode: 'SSP', setName: 'Surging Sparks', setNumber: '057', localSetId: 'sv8' },
-  { id: 'PAL-185', name: 'Iono', setCode: 'PAL', setName: 'Paldea Evolved', setNumber: '185', localSetId: 'sv2' },
-  { id: 'SVI-166', name: 'Arven', setCode: 'SVI', setName: 'Scarlet & Violet Base', setNumber: '166', localSetId: 'sv1' },
-  { id: 'TEF-144', name: 'Buddy-Buddy Poffin', setCode: 'TEF', setName: 'Temporal Forces', setNumber: '144', localSetId: 'sv5' },
-  { id: 'TEF-157', name: 'Prime Catcher', setCode: 'TEF', setName: 'Temporal Forces', setNumber: '157', localSetId: 'sv5' },
-  { id: 'SCR-131', name: 'Area Zero Underdepths', setCode: 'SCR', setName: 'Stellar Crown', setNumber: '131', localSetId: 'sv7' },
-].map(c => ({
-  ...c,
-  imageUrl: getTCGdexImageUrl(c.setCode, c.setNumber),
-  tpciCode: `${c.setCode} ${c.setNumber}`,
-  tpciSetCode: c.setCode,
-}));
-
-// ----------------------------------------------------------------------------
-// 6. HANDLERS DOS ENDPOINTS
+// 3. HANDLERS DOS ENDPOINTS
 // ----------------------------------------------------------------------------
 
 function jsonResponse(data: unknown, status = 200): Response {
@@ -278,7 +376,7 @@ async function handleMeta(): Promise<Response> {
 }
 
 async function handleSets(): Promise<Response> {
-  // Retorna array DIRETO (igual ao server.ts)
+  // Retorna TODAS as coleções do catálogo abrangente
   return jsonResponse(COMPREHENSIVE_SETS);
 }
 
@@ -286,7 +384,10 @@ async function handleSearch(params: URLSearchParams): Promise<Response> {
   const rawQuery = (params.get('q') || '').trim();
   const rawSet = (params.get('set') || '').trim();
 
-  if (!rawQuery && !rawSet) return jsonResponse([]);
+  if (!rawQuery && !rawSet) {
+    // Se ambos estiverem vazios, retorna as cartas de destaque do catálogo
+    return jsonResponse(MODERN_CARDS_CATALOG.slice(0, 18));
+  }
 
   const normQuery = normalizeSearchTerm(rawQuery);
   const normSet = normalizeSearchTerm(rawSet);
@@ -295,47 +396,54 @@ async function handleSearch(params: URLSearchParams): Promise<Response> {
   let resolvedNumber = '';
   let nameQuery = rawQuery;
 
+  // 1. Verifica se a query é um alias de coleção (ex: "realeza absoluta" -> "CRZ")
   if (!resolvedSetId && SET_QUERY_ALIASES[normQuery]) {
-    resolvedSetId = SET_QUERY_ALIASES[normQuery];
+    const aliasCode = SET_QUERY_ALIASES[normQuery];
+    resolvedSetId = TPCI_TO_LOCAL_SET_MAP[aliasCode] || aliasCode.toLowerCase();
     nameQuery = '';
   }
 
+  // 2. Detecta código oficial como "OBF 125", "CRZ 160", "ASC 085", "SVI 166"
   const codeMatch = rawQuery.match(/^([A-Za-z0-9.-]{2,7})[- ]+(\d+|promo)$/i);
   if (codeMatch) {
     const setToken = codeMatch[1].toUpperCase();
-    resolvedSetId = TPCI_TO_LOCAL_SET_MAP[setToken] || setToken.toLowerCase();
+    const setEntry = findSet(setToken);
+    resolvedSetId = setEntry?.ptcgIo || setEntry?.tcgdexSet || TPCI_TO_LOCAL_SET_MAP[setToken] || setToken.toLowerCase();
     resolvedNumber = codeMatch[2];
     nameQuery = '';
   } else {
-    const ptcglNameMatch = rawQuery.match(/^(.+?)\s+([A-Za-z]{3,4})\s+(\d+)$/i);
+    // Detecta padrão "Charizard ex OBF 125"
+    const ptcglNameMatch = rawQuery.match(/^(.+?)\s+([A-Za-z]{2,5})\s+(\d+)$/i);
     if (ptcglNameMatch) {
       nameQuery = ptcglNameMatch[1].trim();
       const setToken = ptcglNameMatch[2].toUpperCase();
-      resolvedSetId = TPCI_TO_LOCAL_SET_MAP[setToken] || setToken.toLowerCase();
+      const setEntry = findSet(setToken);
+      resolvedSetId = setEntry?.ptcgIo || setEntry?.tcgdexSet || TPCI_TO_LOCAL_SET_MAP[setToken] || setToken.toLowerCase();
       resolvedNumber = ptcglNameMatch[3];
     }
   }
 
-  const tcgdexMapping =
-    (rawSet && SET_TO_TCGDEX_MAP[rawSet]) ||
-    (rawSet && SET_TO_TCGDEX_MAP[rawSet.toUpperCase()]) ||
-    (rawSet && SET_TO_TCGDEX_MAP[rawSet.toLowerCase()]) ||
-    (resolvedSetId && SET_TO_TCGDEX_MAP[resolvedSetId.toUpperCase()]) ||
-    (resolvedSetId && SET_TO_TCGDEX_MAP[resolvedSetId.toLowerCase()]);
+  // CASO A: Coleção específica solicitada ou detectada
+  if (resolvedSetId || rawSet) {
+    const targetSet = rawSet || resolvedSetId;
+    const setEntry = findSet(targetSet) || findSet(resolvedSetId);
+    const tcgdexMapping =
+      SET_TO_TCGDEX_MAP[targetSet] ||
+      SET_TO_TCGDEX_MAP[targetSet.toUpperCase()] ||
+      SET_TO_TCGDEX_MAP[targetSet.toLowerCase()] ||
+      (setEntry?.tcgdexSeries && setEntry?.tcgdexSet ? { series: setEntry.tcgdexSeries, set: setEntry.tcgdexSet } : null);
 
-  if (tcgdexMapping) {
-    const rawSetCode = rawSet
-      ? (LOCAL_TO_TPCI_SET_MAP[rawSet.toLowerCase()] || rawSet.toUpperCase())
-      : (LOCAL_TO_TPCI_SET_MAP[resolvedSetId.toLowerCase()] || resolvedSetId.toUpperCase());
-    const matchedExp = COMPREHENSIVE_SETS.find((s: any) =>
-      s.id?.toUpperCase() === rawSetCode ||
-      s.ptcglCode?.toUpperCase() === rawSetCode ||
-      (s.localId && s.localId.toLowerCase() === rawSetCode.toLowerCase())
-    );
-    const setName = matchedExp?.name || rawSet || resolvedSetId;
+    const tpciSetCode = setEntry?.tpci || (LOCAL_TO_TPCI_SET_MAP[targetSet.toLowerCase()] || targetSet.toUpperCase());
+    const setName = setEntry?.namePt || setEntry?.name || tpciSetCode;
 
     try {
-      const allCards = await fetchTcgdexCompleteSet(tcgdexMapping.set, tcgdexMapping.series, rawSetCode, setName);
+      let allCards: any[] = [];
+      if (tcgdexMapping) {
+        allCards = await fetchTcgdexCompleteSet(tcgdexMapping.set, tcgdexMapping.series, tpciSetCode, setName);
+      } else if (setEntry?.ptcgIo) {
+        allCards = await fetchTcgdexCompleteSet(setEntry.ptcgIo, setEntry.era || 'sv', tpciSetCode, setName);
+      }
+
       if (allCards.length > 0) {
         let results = allCards;
 
@@ -355,20 +463,43 @@ async function handleSearch(params: URLSearchParams): Promise<Response> {
         if (results.length > 0) return jsonResponse(results);
       }
     } catch (err) {
-      console.warn('[pokemonLocalApi] TCGdex fetch error:', err);
+      console.warn('[pokemonLocalApi] Erro na busca por set:', err);
     }
   }
 
+  // CASO B: Busca global por nome (Todas as Coleções)
+  if (nameQuery || rawQuery) {
+    try {
+      const searchResults = await searchCardsByQuery(nameQuery || rawQuery);
+      if (searchResults.length > 0) {
+        let filtered = searchResults;
+        if (resolvedNumber) {
+          const targetClean = resolvedNumber.replace(/^0+/, '');
+          filtered = filtered.filter(c =>
+            c.setNumber === resolvedNumber ||
+            String(c.setNumber).replace(/^0+/, '') === targetClean
+          );
+        }
+        if (filtered.length > 0) {
+          return jsonResponse(filtered);
+        }
+      }
+    } catch (err) {
+      console.warn('[pokemonLocalApi] Erro na busca por query:', err);
+    }
+  }
+
+  // CASO C: Fallback final com catálogo local
   const normQ = normalizeSearchTerm(nameQuery || rawQuery);
-  const matched = fallbackCards.filter(c => {
+  const matched = MODERN_CARDS_CATALOG.filter(c => {
     const cardSetCode = (c.setCode || '').toLowerCase();
     const cardName = normalizeSearchTerm(c.name || '');
 
     if (resolvedSetId) {
       const setMatches =
-        cardSetCode === resolvedSetId ||
-        cardSetCode === (TPCI_TO_LOCAL_SET_MAP[resolvedSetId.toUpperCase()] || '').toLowerCase() ||
-        cardSetCode.includes(normSet);
+        cardSetCode === resolvedSetId.toLowerCase() ||
+        cardSetCode === (LOCAL_TO_TPCI_SET_MAP[resolvedSetId.toLowerCase()] || '').toLowerCase() ||
+        (c.localSetId && c.localSetId.toLowerCase() === resolvedSetId.toLowerCase());
       if (!setMatches) return false;
     }
 
@@ -382,7 +513,6 @@ async function handleSearch(params: URLSearchParams): Promise<Response> {
 }
 
 async function handleParseDeck(body: string): Promise<Response> {
-  // Regex parser (mesmo do server.ts, sem Gemini)
   const lines = String(body || '').split('\n');
   const cards: any[] = [];
   let currentCategory: 'Pokémon' | 'Treinador' | 'Energia' = 'Pokémon';
@@ -404,8 +534,8 @@ async function handleParseDeck(body: string): Promise<Response> {
       const number = match[4] || undefined;
 
       const imageUrl = set && number
-        ? getTCGdexImageUrl(set, number)
-        : 'https://images.pokemontcg.io/card-back.png';
+        ? resolveCardImageUrl(set, number)
+        : CARD_BACK_URL;
 
       cards.push({ name, count, set, number, type: currentCategory, imageUrl });
     } else {
@@ -415,7 +545,7 @@ async function handleParseDeck(body: string): Promise<Response> {
           name: simpleMatch[2].trim(),
           count: parseInt(simpleMatch[1], 10),
           type: currentCategory,
-          imageUrl: 'https://images.pokemontcg.io/card-back.png',
+          imageUrl: CARD_BACK_URL,
         });
       }
     }
@@ -425,7 +555,7 @@ async function handleParseDeck(body: string): Promise<Response> {
 }
 
 // ----------------------------------------------------------------------------
-// 7. INTERCEPTOR DE FETCH
+// 4. INTERCEPTOR DE FETCH CLIENT-SIDE
 // ----------------------------------------------------------------------------
 
 let _installed = false;
@@ -460,6 +590,7 @@ export function installPokemonApiInterceptor(): void {
 
   try {
     const originalFetch = window.fetch ? window.fetch.bind(window) : fetch.bind(globalThis);
+    const staticDeployment = isStaticDeployment();
 
     const customFetch = async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
       let url = '';
@@ -468,6 +599,11 @@ export function installPokemonApiInterceptor(): void {
       else if (input && typeof input === 'object' && 'url' in input) url = (input as Request).url;
 
       if (/\/api\/pokemon\//.test(url) || /\/api\/health/.test(url)) {
+        // Se já sabemos que é ambiente estático (como GitHub Pages), atende diretamente sem atraso de 404
+        if (staticDeployment) {
+          return handleLocalApi(url, init);
+        }
+
         // Tenta o servidor real primeiro se acessível
         try {
           const resp = await originalFetch(input, init);
@@ -475,7 +611,7 @@ export function installPokemonApiInterceptor(): void {
             return resp;
           }
         } catch {
-          // Servidor indisponível ou ambiente estático (ex: GitHub Pages ou mobile sem backend)
+          // Servidor indisponível ou ambiente estático
         }
         return handleLocalApi(url, init);
       }
@@ -494,7 +630,7 @@ export function installPokemonApiInterceptor(): void {
       });
       overridden = true;
     } catch {
-      // Ignora erro se window.fetch for getter-only ou protegido
+      // Ignora erro se protegido
     }
 
     // 2. Se não conseguiu, tentar no Window.prototype
@@ -523,9 +659,7 @@ export function installPokemonApiInterceptor(): void {
 
     _installed = true;
     if (overridden) {
-      console.info('[pokemonLocalApi] interceptor instalado com sucesso');
-    } else {
-      console.warn('[pokemonLocalApi] fetch nativo protegido — prosseguindo normalmente sem interceptor');
+      console.info('[pokemonLocalApi] Interceptor client-side instalado com sucesso (suporte total GitHub Pages).');
     }
   } catch (err) {
     console.warn('[pokemonLocalApi] Falha suave ao registrar interceptor:', err);

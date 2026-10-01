@@ -1,14 +1,17 @@
 import { getTCGdexImageUrl, getAuthenticCardImageUrl, normalizeTPCiSetCode, registerCollectionCards } from '../utils/cardImages';
+import { SET_SYNC_TABLE, SetSyncEntry } from '../utils/setSync';
 
 export interface PokemonSet {
-  id: string;          // Official PTCGL uppercase 3-4 letter code (e.g. "TWM", "OBF", "SSP", "ASC")
+  id: string;          // Official PTCGL uppercase 3-4 letter code (e.g. "TWM", "OBF", "SSP", "ASC", "CRZ", "SIT")
   ptcglCode: string;   // Official PTCGL uppercase code
-  localId?: string;    // Secondary / pokemontcg.io identifier (e.g. "sv6", "sv3")
+  localId?: string;    // Secondary / pokemontcg.io identifier (e.g. "sv6", "sv3", "swsh12pt5")
   name: string;
   series: string;
   releaseDate?: string;
   logo?: string;
   symbol?: string;
+  era?: string;
+  regulationMark?: string;
 }
 
 export interface CatalogCard {
@@ -23,193 +26,378 @@ export interface CatalogCard {
   localSetId?: string; // e.g. "sv6"
 }
 
-// Master list of Pokémon TCG collections using PTCGL official codes as primary
-export const COMPREHENSIVE_SETS: PokemonSet[] = [
-  // 1. Coleções de Celebração de 30 Anos
-  { id: '30TH', ptcglCode: '30TH', localId: '30th', name: 'Celebrações de 30 Anos (30th Anniversary Celebration - 30TH)', series: 'Mega Evolution', releaseDate: '2026-02-27', logo: 'https://assets.tcgdex.net/en/me/30th/logo', symbol: 'https://assets.tcgdex.net/univ/me/30th/symbol' },
-  { id: '30TH-C', ptcglCode: '30TH-C', localId: '30th-c', name: 'Coleção Clássica de 30 Anos (30th Classic Collection - 30TH-C)', series: 'Mega Evolution', releaseDate: '2026-02-27' },
+function getEraSeriesLabel(era: string): string {
+  switch (era) {
+    case 'anniv': return 'Celebrações de 30 Anos';
+    case 'me': return 'Mega Evolution (2025-2026)';
+    case 'sv': return 'Scarlet & Violet (2023-2025)';
+    case 'swsh': return 'Sword & Shield (2020-2023)';
+    case 'sm': return 'Sun & Moon (2017-2019)';
+    case 'xy': return 'XY (2014-2016)';
+    case 'bw': return 'Black & White (2011-2013)';
+    case 'hgss': return 'HeartGold & SoulSilver';
+    case 'col': return 'Call of Legends';
+    case 'dp': return 'Diamond & Pearl';
+    case 'ex': return 'EX Series';
+    case 'base': return 'Classic / Base';
+    case 'tcgp': return 'Pokémon TCG Pocket';
+    default: return 'Outras Coleções';
+  }
+}
 
-  // 2. Nova Era Mega Evolution (2025+)
-  { id: 'ASC', ptcglCode: 'ASC', localId: 'asc', name: 'Heróis Excelsos (Mega Evolution: Ascended Heroes - ASC)', series: 'Mega Evolution', releaseDate: '2026-01-30', logo: 'https://images.pokemontcg.io/asc/logo.png', symbol: 'https://images.pokemontcg.io/asc/symbol.png' },
-  { id: 'PFL', ptcglCode: 'PFL', localId: 'pfl', name: 'Fogo Fantasmagórico (Mega Evolution: Phantasmal Flames - PFL)', series: 'Mega Evolution', releaseDate: '2025-11-14', logo: 'https://images.pokemontcg.io/pfl/logo.png', symbol: 'https://images.pokemontcg.io/pfl/symbol.png' },
-  { id: 'POR', ptcglCode: 'POR', localId: 'por', name: 'Ordem Perfeita (Mega Evolution: Perfect Order - POR)', series: 'Mega Evolution', releaseDate: '2026-03-27', logo: 'https://images.pokemontcg.io/por/logo.png', symbol: 'https://images.pokemontcg.io/por/symbol.png' },
-  { id: 'MEG', ptcglCode: 'MEG', localId: 'meg', name: 'Mega Evolução Base (Mega Evolution - MEG)', series: 'Mega Evolution', releaseDate: '2025-09-26', logo: 'https://images.pokemontcg.io/meg/logo.png', symbol: 'https://images.pokemontcg.io/meg/symbol.png' },
-  { id: 'CRI', ptcglCode: 'CRI', localId: 'cri', name: 'Caos Ascendente (Mega Evolution: Chaos Rising - CRI)', series: 'Mega Evolution', releaseDate: '2026-05-22' },
-  { id: 'PBL', ptcglCode: 'PBL', localId: 'pbl', name: 'Escuridão Total (Mega Evolution: Pitch Black - PBL)', series: 'Mega Evolution', releaseDate: '2026-07-17' },
-
-  // 2. Expansões de 2025 de Scarlet & Violet
-  { id: 'PRE', ptcglCode: 'PRE', localId: 'sv08.5', name: 'Evoluções Prismáticas (Prismatic Evolutions - PRE)', series: 'Scarlet & Violet', releaseDate: '2025-01-17' },
-  { id: 'JTG', ptcglCode: 'JTG', localId: 'sv09', name: 'Amigos de Jornada (Journey Together - JTG)', series: 'Scarlet & Violet', releaseDate: '2025-03-28' },
-  { id: 'DRI', ptcglCode: 'DRI', localId: 'sv10', name: 'Rivais Predestinados (Destined Rivals - DRI)', series: 'Scarlet & Violet', releaseDate: '2025-05-30' },
-  { id: 'BLK', ptcglCode: 'BLK', localId: 'sv10.5b', name: 'Raio Negro (Black Bolt - BLK)', series: 'Scarlet & Violet', releaseDate: '2025-07-18' },
-  { id: 'WHT', ptcglCode: 'WHT', localId: 'sv10.5w', name: 'Fogo Branco (White Flare - WHT)', series: 'Scarlet & Violet', releaseDate: '2025-07-18' },
-
-  // 3. Formato Standard Atual (Scarlet & Violet)
-  { id: 'SSP', ptcglCode: 'SSP', localId: 'sv08', name: 'Faíscas Impetuosas (Surging Sparks - SSP)', series: 'Scarlet & Violet', releaseDate: '2024-11-08' },
-  { id: 'SCR', ptcglCode: 'SCR', localId: 'sv07', name: 'Coroa Estelar (Stellar Crown - SCR)', series: 'Scarlet & Violet', releaseDate: '2024-09-13' },
-  { id: 'SFA', ptcglCode: 'SFA', localId: 'sv06.5', name: 'Fábulas Nebulosas (Shrouded Fable - SFA)', series: 'Scarlet & Violet', releaseDate: '2024-08-02' },
-  { id: 'TWM', ptcglCode: 'TWM', localId: 'sv06', name: 'Máscaras do Crepúsculo (Twilight Masquerade - TWM)', series: 'Scarlet & Violet', releaseDate: '2024-05-24' },
-  { id: 'TEF', ptcglCode: 'TEF', localId: 'sv05', name: 'Forças Temporais (Temporal Forces - TEF)', series: 'Scarlet & Violet', releaseDate: '2024-03-22' },
-  { id: 'PAF', ptcglCode: 'PAF', localId: 'sv04.5', name: 'Destinos de Paldea (Paldean Fates - PAF)', series: 'Scarlet & Violet', releaseDate: '2024-01-26' },
-  { id: 'PAR', ptcglCode: 'PAR', localId: 'sv04', name: 'Fenda Paradoxal (Paradox Rift - PAR)', series: 'Scarlet & Violet', releaseDate: '2023-11-03' },
-  { id: 'MEW', ptcglCode: 'MEW', localId: 'sv03.5', name: '151 (Pokémon 151 - MEW)', series: 'Scarlet & Violet', releaseDate: '2023-09-22' },
-  { id: 'OBF', ptcglCode: 'OBF', localId: 'sv03', name: 'Obsidiana em Chamas (Obsidian Flames - OBF)', series: 'Scarlet & Violet', releaseDate: '2023-08-11' },
-  { id: 'PAL', ptcglCode: 'PAL', localId: 'sv02', name: 'Evoluções em Paldea (Paldea Evolved - PAL)', series: 'Scarlet & Violet', releaseDate: '2023-06-09' },
-  { id: 'SVI', ptcglCode: 'SVI', localId: 'sv01', name: 'Escarlate e Violeta Base (SVI)', series: 'Scarlet & Violet', releaseDate: '2023-03-31' }
-];
-
-export const TPCI_TO_LOCAL_SET_MAP: Record<string, string> = {
-  'ASC': 'asc',
-  'PFL': 'pfl',
-  'POR': 'por',
-  'MEG': 'meg',
-  'CRI': 'cri',
-  'PBL': 'pbl',
-  'PRE': 'sv08.5',
-  'JTG': 'sv09',
-  'DRI': 'sv10',
-  'BLK': 'sv10.5b',
-  'WHT': 'sv10.5w',
-  'SSP': 'sv08',
-  'SCR': 'sv07',
-  'SFA': 'sv06.5',
-  'TWM': 'sv06',
-  'TEF': 'sv05',
-  'PAF': 'sv04.5',
-  'PAR': 'sv04',
-  'MEW': 'sv03.5',
-  'OBF': 'sv03',
-  'PAL': 'sv02',
-  'SVI': 'sv01'
+const ERA_ORDER: Record<string, number> = {
+  'anniv': 1,
+  'me': 2,
+  'sv': 3,
+  'swsh': 4,
+  'sm': 5,
+  'xy': 6,
+  'bw': 7,
+  'col': 8,
+  'hgss': 9,
+  'dp': 10,
+  'ex': 11,
+  'base': 12,
+  'tcgp': 13
 };
 
-export const LOCAL_TO_TPCI_SET_MAP: Record<string, string> = {
-  'asc': 'ASC',
-  'pfl': 'PFL',
-  'por': 'POR',
-  'meg': 'MEG',
-  'cri': 'CRI',
-  'pbl': 'PBL',
-  'pre': 'PRE',
-  'sv08.5': 'PRE',
-  'sv8pt5': 'PRE',
-  'jtg': 'JTG',
-  'sv09': 'JTG',
-  'sv9': 'JTG',
-  'dri': 'DRI',
-  'sv10': 'DRI',
-  'blk': 'BLK',
-  'sv10.5b': 'BLK',
-  'sv10pt5b': 'BLK',
-  'wht': 'WHT',
-  'sv10.5w': 'WHT',
-  'sv10pt5w': 'WHT',
-  'ssp': 'SSP',
-  'sv08': 'SSP',
-  'sv8': 'SSP',
-  'scr': 'SCR',
-  'sv07': 'SCR',
-  'sv7': 'SCR',
-  'sfa': 'SFA',
-  'sv06.5': 'SFA',
-  'sv6pt5': 'SFA',
-  'sv6': 'TWM',
-  'sv06': 'TWM',
-  'twm': 'TWM',
-  'sv5': 'TEF',
-  'sv05': 'TEF',
-  'tef': 'TEF',
-  'sv45': 'PAF',
-  'sv04.5': 'PAF',
-  'paf': 'PAF',
-  'sv4': 'PAR',
-  'sv04': 'PAR',
-  'par': 'PAR',
-  'sv3pt5': 'MEW',
-  'sv03.5': 'MEW',
-  'mew': 'MEW',
-  'sv3': 'OBF',
-  'sv03': 'OBF',
-  'obf': 'OBF',
-  'sv2': 'PAL',
-  'sv02': 'PAL',
-  'pal': 'PAL',
-  'sv1': 'SVI',
-  'sv01': 'SVI',
-  'svi': 'SVI'
-};
+// Master list of ALL Pokémon TCG collections using PTCGL official codes as primary
+export const COMPREHENSIVE_SETS: PokemonSet[] = [...SET_SYNC_TABLE]
+  .sort((a, b) => (ERA_ORDER[a.era] || 99) - (ERA_ORDER[b.era] || 99))
+  .map((e: SetSyncEntry) => {
+    const formattedName = e.namePt && e.namePt !== e.name
+      ? `${e.namePt} (${e.name} - ${e.tpci})`
+      : `${e.name} (${e.tpci})`;
+    return {
+      id: e.tpci,
+      ptcglCode: e.tpci,
+      localId: e.ptcgIo || e.tcgdexSet || e.tpci.toLowerCase(),
+      name: formattedName,
+      series: getEraSeriesLabel(e.era),
+      era: e.era,
+      regulationMark: e.regulationMark,
+      logo: e.tcgdexSeries && e.tcgdexSet ? `https://assets.tcgdex.net/en/${e.tcgdexSeries}/${e.tcgdexSet}/logo` : undefined,
+      symbol: e.tcgdexSeries && e.tcgdexSet ? `https://assets.tcgdex.net/univ/${e.tcgdexSeries}/${e.tcgdexSet}/symbol` : undefined
+    };
+  });
 
-// Aliases for Portuguese names and colloquial queries
+// Dynamic lookup maps based on SET_SYNC_TABLE
+export const TPCI_TO_LOCAL_SET_MAP: Record<string, string> = (() => {
+  const map: Record<string, string> = {};
+  for (const e of SET_SYNC_TABLE) {
+    map[e.tpci.toUpperCase()] = e.ptcgIo || e.tcgdexSet || e.tpci.toLowerCase();
+    if (e.tcgdexSet) map[e.tcgdexSet.toUpperCase()] = e.ptcgIo || e.tcgdexSet;
+  }
+  return map;
+})();
+
+export const LOCAL_TO_TPCI_SET_MAP: Record<string, string> = (() => {
+  const map: Record<string, string> = {};
+  for (const e of SET_SYNC_TABLE) {
+    map[e.tpci.toLowerCase()] = e.tpci;
+    if (e.ptcgIo) map[e.ptcgIo.toLowerCase()] = e.tpci;
+    if (e.tcgdexSet) map[e.tcgdexSet.toLowerCase()] = e.tpci;
+  }
+  // Extra common aliases
+  map['pre'] = 'PRE';
+  map['sv8pt5'] = 'PRE';
+  map['sv08.5'] = 'PRE';
+  map['jtg'] = 'JTG';
+  map['sv09'] = 'JTG';
+  map['sv9'] = 'JTG';
+  map['dri'] = 'DRI';
+  map['sv10'] = 'DRI';
+  map['blk'] = 'BLK';
+  map['sv10.5b'] = 'BLK';
+  map['wht'] = 'WHT';
+  map['sv10.5w'] = 'WHT';
+  map['ssp'] = 'SSP';
+  map['sv08'] = 'SSP';
+  map['scr'] = 'SCR';
+  map['sv07'] = 'SCR';
+  map['sfa'] = 'SFA';
+  map['sv06.5'] = 'SFA';
+  map['twm'] = 'TWM';
+  map['sv06'] = 'TWM';
+  map['tef'] = 'TEF';
+  map['sv05'] = 'TEF';
+  map['paf'] = 'PAF';
+  map['sv04.5'] = 'PAF';
+  map['par'] = 'PAR';
+  map['sv04'] = 'PAR';
+  map['mew'] = 'MEW';
+  map['sv03.5'] = 'MEW';
+  map['sv3pt5'] = 'MEW';
+  map['obf'] = 'OBF';
+  map['sv03'] = 'OBF';
+  map['pal'] = 'PAL';
+  map['sv02'] = 'PAL';
+  map['svi'] = 'SVI';
+  map['sv01'] = 'SVI';
+  map['crz'] = 'CRZ';
+  map['swsh12pt5'] = 'CRZ';
+  map['swsh12.5'] = 'CRZ';
+  map['sit'] = 'SIT';
+  map['swsh12'] = 'SIT';
+  map['lor'] = 'LOR';
+  map['swsh11'] = 'LOR';
+  map['asr'] = 'ASR';
+  map['swsh10'] = 'ASR';
+  map['brs'] = 'BRS';
+  map['swsh09'] = 'BRS';
+  map['swsh9'] = 'BRS';
+  map['fst'] = 'FST';
+  map['swsh08'] = 'FST';
+  map['swsh8'] = 'FST';
+  map['evs'] = 'EVS';
+  map['swsh07'] = 'EVS';
+  map['cre'] = 'CRE';
+  map['swsh06'] = 'CRE';
+  map['bst'] = 'BST';
+  map['swsh05'] = 'BST';
+  map['shf'] = 'SHF';
+  map['swsh04.5'] = 'SHF';
+  map['viv'] = 'VIV';
+  map['swsh04'] = 'VIV';
+  map['cpa'] = 'CPA';
+  map['swsh03.5'] = 'CPA';
+  map['daa'] = 'DAA';
+  map['swsh03'] = 'DAA';
+  map['rcl'] = 'RCL';
+  map['swsh02'] = 'RCL';
+  map['ssh'] = 'SSH';
+  map['swsh01'] = 'SSH';
+  map['cel'] = 'CEL';
+  map['pgo'] = 'PGO';
+  return map;
+})();
+
+// Comprehensive aliases for colloquial, Portuguese, and English queries
 export const SET_QUERY_ALIASES: Record<string, string> = {
-  'herois excelsor': 'asc',
-  'herois excelsos': 'asc',
-  'heróis excelsos': 'asc',
-  'herois': 'asc',
-  'ascended heroes': 'asc',
-  'asc': 'asc',
-  'fogo fantasmagorico': 'pfl',
-  'fogo fantasmagórico': 'pfl',
-  'fantasmagorico': 'pfl',
-  'fantasmagórico': 'pfl',
-  'phantasmal flames': 'pfl',
-  'pfl': 'pfl',
-  'ordem perfeita': 'por',
-  'perfect order': 'por',
-  'por': 'por',
-  'mega evolucao': 'meg',
-  'mega evolução': 'meg',
-  'mega evolution': 'meg',
-  'meg': 'meg',
-  'caos ascendente': 'cri',
-  'chaos rising': 'cri',
-  'cri': 'cri',
-  'escuridao total': 'pbl',
-  'escuridão total': 'pbl',
-  'pitch black': 'pbl',
-  'pbl': 'pbl',
-  'evolucoes prismaticas': 'pre',
-  'evoluções prismáticas': 'pre',
-  'prismatic evolutions': 'pre',
-  'pre': 'pre',
-  'jornada em conjunto': 'jtg',
-  'amigos de jornada': 'jtg',
-  'amigos de jornado': 'jtg',
-  'amigos jornada': 'jtg',
-  'journey together': 'jtg',
-  'jtg': 'jtg',
-  'rivais destinados': 'dri',
-  'rivais predestinados': 'dri',
-  'rivais predestinado': 'dri',
-  'destined rivals': 'dri',
-  'dri': 'dri',
-  'raio negro': 'blk',
-  'raio preto': 'blk',
-  'black bolt': 'blk',
-  'blk': 'blk',
-  'fogo branco': 'wht',
-  'chama branca': 'wht',
-  'white flare': 'wht',
-  'wht': 'wht',
-  'faiscas impetuosas': 'ssp',
-  'faíscas impetuosas': 'ssp',
-  'surging sparks': 'ssp',
-  'ssp': 'ssp',
-  'coroa estelar': 'scr',
-  'stellar crown': 'scr',
-  'scr': 'scr',
-  'mascaras do crepusculo': 'sv6',
-  'máscaras do crepúsculo': 'sv6',
-  'twilight masquerade': 'sv6',
-  'twm': 'sv6',
-  'forcas temporais': 'sv5',
-  'forças temporais': 'sv5',
-  'temporal forces': 'sv5',
-  'tef': 'sv5',
-  '151': 'sv3pt5',
-  'mew': 'sv3pt5',
-  'obsidiana em chamas': 'sv3',
-  'obsidian flames': 'sv3',
-  'obf': 'sv3'
+  // 30th Anniversary & Mega Evolution
+  'celebracoes de 30 anos': '30TH',
+  'celebrações de 30 anos': '30TH',
+  'celebracoes 30 anos': '30TH',
+  '30 anos': '30TH',
+  '30th': '30TH',
+  '30c': '30TH',
+  '30th celebration': '30TH',
+  'colecao classica de 30 anos': '30TH-C',
+  'coleção clássica de 30 anos': '30TH-C',
+  '30th-c': '30TH-C',
+  'herois excelsor': 'ASC',
+  'herois excelsos': 'ASC',
+  'heróis excelsos': 'ASC',
+  'herois': 'ASC',
+  'ascended heroes': 'ASC',
+  'asc': 'ASC',
+  'fogo fantasmagorico': 'PFL',
+  'fogo fantasmagórico': 'PFL',
+  'fantasmagorico': 'PFL',
+  'fantasmagórico': 'PFL',
+  'phantasmal flames': 'PFL',
+  'pfl': 'PFL',
+  'ordem perfeita': 'POR',
+  'perfect order': 'POR',
+  'equilibrio perfeito': 'POR',
+  'equilíbrio perfeito': 'POR',
+  'por': 'POR',
+  'mega evolucao': 'MEG',
+  'mega evolução': 'MEG',
+  'megaevolução': 'MEG',
+  'megaevolucao': 'MEG',
+  'mega evolution': 'MEG',
+  'meg': 'MEG',
+  'caos ascendente': 'CRI',
+  'chaos rising': 'CRI',
+  'cri': 'CRI',
+  'escuridao total': 'PBL',
+  'escuridão total': 'PBL',
+  'escuridao absoluta': 'PBL',
+  'pitch black': 'PBL',
+  'pbl': 'PBL',
+
+  // Scarlet & Violet (2023-2025)
+  'evolucoes prismaticas': 'PRE',
+  'evoluções prismáticas': 'PRE',
+  'prismatic evolutions': 'PRE',
+  'pre': 'PRE',
+  'jornada em conjunto': 'JTG',
+  'amigos de jornada': 'JTG',
+  'amigos de jornado': 'JTG',
+  'amigos jornada': 'JTG',
+  'journey together': 'JTG',
+  'jtg': 'JTG',
+  'rivais destinados': 'DRI',
+  'rivais predestinados': 'DRI',
+  'rivais predestinado': 'DRI',
+  'destined rivals': 'DRI',
+  'dri': 'DRI',
+  'raio negro': 'BLK',
+  'raio preto': 'BLK',
+  'black bolt': 'BLK',
+  'blk': 'BLK',
+  'fogo branco': 'WHT',
+  'chama branca': 'WHT',
+  'white flare': 'WHT',
+  'wht': 'WHT',
+  'faiscas impetuosas': 'SSP',
+  'faíscas impetuosas': 'SSP',
+  'fagulhas impetuosas': 'SSP',
+  'surging sparks': 'SSP',
+  'ssp': 'SSP',
+  'coroa estelar': 'SCR',
+  'stellar crown': 'SCR',
+  'scr': 'SCR',
+  'fabulas nebulosas': 'SFA',
+  'fábulas nebulosas': 'SFA',
+  'shrouded fable': 'SFA',
+  'sfa': 'SFA',
+  'mascaras do crepusculo': 'TWM',
+  'máscaras do crepúsculo': 'TWM',
+  'twilight masquerade': 'TWM',
+  'twm': 'TWM',
+  'forcas temporais': 'TEF',
+  'forças temporais': 'TEF',
+  'temporal forces': 'TEF',
+  'tef': 'TEF',
+  'destinos de paldea': 'PAF',
+  'paldean fates': 'PAF',
+  'paf': 'PAF',
+  'fenda paradoxal': 'PAR',
+  'paradox rift': 'PAR',
+  'par': 'PAR',
+  '151': 'MEW',
+  'pokemon 151': 'MEW',
+  'mew': 'MEW',
+  'obsidiana em chamas': 'OBF',
+  'obsidian flames': 'OBF',
+  'obf': 'OBF',
+  'evolucoes em paldea': 'PAL',
+  'evoluções em paldea': 'PAL',
+  'paldea evolved': 'PAL',
+  'pal': 'PAL',
+  'escarlate e violeta': 'SVI',
+  'scarlet and violet': 'SVI',
+  'scarlet & violet': 'SVI',
+  'svi': 'SVI',
+
+  // Sword & Shield (2020-2023)
+  'realeza absoluta': 'CRZ',
+  'zenite real': 'CRZ',
+  'crown zenith': 'CRZ',
+  'crz': 'CRZ',
+  'tempestade prateada': 'SIT',
+  'silver tempest': 'SIT',
+  'sit': 'SIT',
+  'origem perdida': 'LOR',
+  'lost origin': 'LOR',
+  'lor': 'LOR',
+  'pokemon go': 'PGO',
+  'pokémon go': 'PGO',
+  'pgo': 'PGO',
+  'estrelas radiantes': 'ASR',
+  'resplendor astral': 'ASR',
+  'astral radiance': 'ASR',
+  'asr': 'ASR',
+  'astros cintilantes': 'BRS',
+  'brilliant stars': 'BRS',
+  'brs': 'BRS',
+  'golpe fusao': 'FST',
+  'golpe fusão': 'FST',
+  'fusion strike': 'FST',
+  'fst': 'FST',
+  'celebracoes': 'CEL',
+  'celebrações': 'CEL',
+  'celebrations': 'CEL',
+  'cel': 'CEL',
+  'ceus em evolucao': 'EVS',
+  'céus em evolução': 'EVS',
+  'evolving skies': 'EVS',
+  'evs': 'EVS',
+  'reinado arrepiante': 'CRE',
+  'chilling reign': 'CRE',
+  'cre': 'CRE',
+  'estilos de batalha': 'BST',
+  'battle styles': 'BST',
+  'bst': 'BST',
+  'destinos brilhantes': 'SHF',
+  'shining fates': 'SHF',
+  'shf': 'SHF',
+  'voltagem vivida': 'VIV',
+  'voltagem vívida': 'VIV',
+  'vivid voltage': 'VIV',
+  'viv': 'VIV',
+  'caminho do campeao': 'CPA',
+  'caminho do campeão': 'CPA',
+  "champion's path": 'CPA',
+  'cpa': 'CPA',
+  'escuridao incandescente': 'DAA',
+  'escuridão incandescente': 'DAA',
+  'darkness ablaze': 'DAA',
+  'daa': 'DAA',
+  'rixa rebelde': 'RCL',
+  'golpe rebelde': 'RCL',
+  'rebel clash': 'RCL',
+  'rcl': 'RCL',
+  'espada e escudo': 'SSH',
+  'sword and shield': 'SSH',
+  'sword & shield': 'SSH',
+  'ssh': 'SSH',
+
+  // Sun & Moon (2017-2019)
+  'eclipse cosmico': 'CEC',
+  'eclipse cósmico': 'CEC',
+  'cosmic eclipse': 'CEC',
+  'cec': 'CEC',
+  'destinos ocultos': 'HIF',
+  'hidden fates': 'HIF',
+  'hif': 'HIF',
+  'sintonia mental': 'UNM',
+  'unified minds': 'UNM',
+  'unm': 'UNM',
+  'elos inquebraveis': 'UNB',
+  'elos inquebráveis': 'UNB',
+  'unbroken bonds': 'UNB',
+  'unb': 'UNB',
+  'uniao de aliados': 'TEU',
+  'união de aliados': 'TEU',
+  'team up': 'TEU',
+  'teu': 'TEU',
+  'trovoes perdidos': 'LOT',
+  'trovões perdidos': 'LOT',
+  'lost thunder': 'LOT',
+  'lot': 'LOT',
+
+  // XY
+  'evolucoes': 'EVO',
+  'evoluções': 'EVO',
+  'evolutions': 'EVO',
+  'evo': 'EVO',
+  'cerco de vapor': 'STS',
+  'steam siege': 'STS',
+  'fusao de destinos': 'FCO',
+  'fates collide': 'FCO',
+  'geracoes': 'GEN',
+  'geraçoes': 'GEN',
+  'generations': 'GEN',
+  'turbo colisao': 'BKP',
+  'breakpoint': 'BKP',
+  'turbo revolucao': 'BKT',
+  'breakthrough': 'BKT',
+  'origens ancestrais': 'AOR',
+  'ancient origins': 'AOR',
+  'ceus estrondosos': 'ROS',
+  'roaring skies': 'ROS',
+  'conflito primitivo': 'PRC',
+  'primal clash': 'PRC',
+  'forca fantasma': 'PHF',
+  'phantom forces': 'PHF',
+  'punhos furiosos': 'FFI',
+  'furious fists': 'FFI',
+  'flash de fogo': 'FLF',
+  'flashfire': 'FLF',
+  'xy': 'XY',
 };
 
 // Complete modern cards catalog using official PTCGL codes as primary and authentic TCGdex scans
@@ -328,7 +516,39 @@ export const MODERN_CARDS_CATALOG: CatalogCard[] = [
   { id: 'SVI-166', name: 'Arven', imageUrl: getTCGdexImageUrl('SVI', '166'), setCode: 'SVI', setName: 'Scarlet & Violet Base', setNumber: '166', tpciCode: 'SVI 166', tpciSetCode: 'SVI', localSetId: 'sv1' },
   { id: 'SVI-181', name: 'Nest Ball', imageUrl: getTCGdexImageUrl('SVI', '181'), setCode: 'SVI', setName: 'Scarlet & Violet Base', setNumber: '181', tpciCode: 'SVI 181', tpciSetCode: 'SVI', localSetId: 'sv1' },
   { id: 'SVI-196', name: 'Ultra Ball', imageUrl: getTCGdexImageUrl('SVI', '196'), setCode: 'SVI', setName: 'Scarlet & Violet Base', setNumber: '196', tpciCode: 'SVI 196', tpciSetCode: 'SVI', localSetId: 'sv1' },
-  { id: 'SVI-191', name: 'Rare Candy', imageUrl: getTCGdexImageUrl('SVI', '191'), setCode: 'SVI', setName: 'Scarlet & Violet Base', setNumber: '191', tpciCode: 'SVI 191', tpciSetCode: 'SVI', localSetId: 'sv1' }
+  { id: 'SVI-191', name: 'Rare Candy', imageUrl: getTCGdexImageUrl('SVI', '191'), setCode: 'SVI', setName: 'Scarlet & Violet Base', setNumber: '191', tpciCode: 'SVI 191', tpciSetCode: 'SVI', localSetId: 'sv1' },
+  { id: 'SVI-189', name: "Professor's Research", imageUrl: getTCGdexImageUrl('SVI', '189'), setCode: 'SVI', setName: 'Scarlet & Violet Base', setNumber: '189', tpciCode: 'SVI 189', tpciSetCode: 'SVI', localSetId: 'sv1' },
+  { id: 'PAR-160', name: 'Counter Catcher', imageUrl: getTCGdexImageUrl('PAR', '160'), setCode: 'PAR', setName: 'Paradox Rift', setNumber: '160', tpciCode: 'PAR 160', tpciSetCode: 'PAR', localSetId: 'sv4' },
+  { id: 'PAR-163', name: 'Earthen Vessel', imageUrl: getTCGdexImageUrl('PAR', '163'), setCode: 'PAR', setName: 'Paradox Rift', setNumber: '163', tpciCode: 'PAR 163', tpciSetCode: 'PAR', localSetId: 'sv4' },
+  { id: 'PAR-170', name: "Professor Sada's Vitality", imageUrl: getTCGdexImageUrl('PAR', '170'), setCode: 'PAR', setName: 'Paradox Rift', setNumber: '170', tpciCode: 'PAR 170', tpciSetCode: 'PAR', localSetId: 'sv4' },
+  { id: 'PAR-124', name: 'Roaring Moon ex', imageUrl: getTCGdexImageUrl('PAR', '124'), setCode: 'PAR', setName: 'Paradox Rift', setNumber: '124', tpciCode: 'PAR 124', tpciSetCode: 'PAR', localSetId: 'sv4' },
+  { id: 'PAR-070', name: 'Iron Hands ex', imageUrl: getTCGdexImageUrl('PAR', '070'), setCode: 'PAR', setName: 'Paradox Rift', setNumber: '070', tpciCode: 'PAR 070', tpciSetCode: 'PAR', localSetId: 'sv4' },
+  { id: 'PAR-139', name: 'Gholdengo ex', imageUrl: getTCGdexImageUrl('PAR', '139'), setCode: 'PAR', setName: 'Paradox Rift', setNumber: '139', tpciCode: 'PAR 139', tpciSetCode: 'PAR', localSetId: 'sv4' },
+  { id: 'SFA-061', name: 'Night Stretcher', imageUrl: getTCGdexImageUrl('SFA', '061'), setCode: 'SFA', setName: 'Shrouded Fable', setNumber: '061', tpciCode: 'SFA 061', tpciSetCode: 'SFA', localSetId: 'sv6pt5' },
+  { id: 'SFA-039', name: 'Pecharunt ex', imageUrl: getTCGdexImageUrl('SFA', '039'), setCode: 'SFA', setName: 'Shrouded Fable', setNumber: '039', tpciCode: 'SFA 039', tpciSetCode: 'SFA', localSetId: 'sv6pt5' },
+  { id: 'TEF-038', name: 'Gouging Fire ex', imageUrl: getTCGdexImageUrl('TEF', '038'), setCode: 'TEF', setName: 'Temporal Forces', setNumber: '038', tpciCode: 'TEF 038', tpciSetCode: 'TEF', localSetId: 'sv5' },
+  { id: 'TEF-081', name: 'Iron Crown ex', imageUrl: getTCGdexImageUrl('TEF', '081'), setCode: 'TEF', setName: 'Temporal Forces', setNumber: '081', tpciCode: 'TEF 081', tpciSetCode: 'TEF', localSetId: 'sv5' },
+
+  // --- STAPLES SWORD & SHIELD (SWSH) ---
+  { id: 'CRZ-020', name: 'Radiant Charizard', imageUrl: getTCGdexImageUrl('CRZ', '020'), setCode: 'CRZ', setName: 'Crown Zenith', setNumber: '020', tpciCode: 'CRZ 020', tpciSetCode: 'CRZ', localSetId: 'swsh12pt5' },
+  { id: 'SIT-136', name: 'Regidrago VSTAR', imageUrl: getTCGdexImageUrl('SIT', '136'), setCode: 'SIT', setName: 'Silver Tempest', setNumber: '136', tpciCode: 'SIT 136', tpciSetCode: 'SIT', localSetId: 'swsh12' },
+  { id: 'SIT-139', name: 'Lugia VSTAR', imageUrl: getTCGdexImageUrl('SIT', '139'), setCode: 'SIT', setName: 'Silver Tempest', setNumber: '139', tpciCode: 'SIT 139', tpciSetCode: 'SIT', localSetId: 'swsh12' },
+  { id: 'SIT-059', name: 'Radiant Alakazam', imageUrl: getTCGdexImageUrl('SIT', '059'), setCode: 'SIT', setName: 'Silver Tempest', setNumber: '059', tpciCode: 'SIT 059', tpciSetCode: 'SIT', localSetId: 'swsh12' },
+  { id: 'LOR-131', name: 'Giratina VSTAR', imageUrl: getTCGdexImageUrl('LOR', '131'), setCode: 'LOR', setName: 'Lost Origin', setNumber: '131', tpciCode: 'LOR 131', tpciSetCode: 'LOR', localSetId: 'swsh11' },
+  { id: 'LOR-079', name: 'Comfey', imageUrl: getTCGdexImageUrl('LOR', '079'), setCode: 'LOR', setName: 'Lost Origin', setNumber: '079', tpciCode: 'LOR 079', tpciSetCode: 'LOR', localSetId: 'swsh11' },
+  { id: 'LOR-070', name: 'Sableye', imageUrl: getTCGdexImageUrl('LOR', '070'), setCode: 'LOR', setName: 'Lost Origin', setNumber: '070', tpciCode: 'LOR 070', tpciSetCode: 'LOR', localSetId: 'swsh11' },
+  { id: 'LOR-050', name: 'Cramorant', imageUrl: getTCGdexImageUrl('LOR', '050'), setCode: 'LOR', setName: 'Lost Origin', setNumber: '050', tpciCode: 'LOR 050', tpciSetCode: 'LOR', localSetId: 'swsh11' },
+  { id: 'LOR-155', name: "Colress's Experiment", imageUrl: getTCGdexImageUrl('LOR', '155'), setCode: 'LOR', setName: 'Lost Origin', setNumber: '155', tpciCode: 'LOR 155', tpciSetCode: 'LOR', localSetId: 'swsh11' },
+  { id: 'LOR-162', name: 'Lost Vacuum', imageUrl: getTCGdexImageUrl('LOR', '162'), setCode: 'LOR', setName: 'Lost Origin', setNumber: '162', tpciCode: 'LOR 162', tpciSetCode: 'LOR', localSetId: 'swsh11' },
+  { id: 'LOR-163', name: 'Mirage Gate', imageUrl: getTCGdexImageUrl('LOR', '163'), setCode: 'LOR', setName: 'Lost Origin', setNumber: '163', tpciCode: 'LOR 163', tpciSetCode: 'LOR', localSetId: 'swsh11' },
+  { id: 'ASR-046', name: 'Radiant Greninja', imageUrl: getTCGdexImageUrl('ASR', '046'), setCode: 'ASR', setName: 'Astral Radiance', setNumber: '046', tpciCode: 'ASR 046', tpciSetCode: 'ASR', localSetId: 'swsh10' },
+  { id: 'BRS-122', name: 'Arceus VSTAR', imageUrl: getTCGdexImageUrl('BRS', '122'), setCode: 'BRS', setName: 'Brilliant Stars', setNumber: '122', tpciCode: 'BRS 122', tpciSetCode: 'BRS', localSetId: 'swsh9' },
+  { id: 'BRS-041', name: 'Manaphy', imageUrl: getTCGdexImageUrl('BRS', '041'), setCode: 'BRS', setName: 'Brilliant Stars', setNumber: '041', tpciCode: 'BRS 041', tpciSetCode: 'BRS', localSetId: 'swsh9' },
+  { id: 'FST-225', name: 'Battle VIP Pass', imageUrl: getTCGdexImageUrl('FST', '225'), setCode: 'FST', setName: 'Fusion Strike', setNumber: '225', tpciCode: 'FST 225', tpciSetCode: 'FST', localSetId: 'swsh8' },
+  { id: 'FST-114', name: 'Mew VMAX', imageUrl: getTCGdexImageUrl('FST', '114'), setCode: 'FST', setName: 'Fusion Strike', setNumber: '114', tpciCode: 'FST 114', tpciSetCode: 'FST', localSetId: 'swsh8' },
+  { id: 'CEL-005', name: 'Pikachu', imageUrl: getTCGdexImageUrl('CEL', '005'), setCode: 'CEL', setName: 'Celebrations', setNumber: '005', tpciCode: 'CEL 005', tpciSetCode: 'CEL', localSetId: 'cel25' },
+  { id: '30TH-C-001', name: 'Charizard', imageUrl: getTCGdexImageUrl('30TH-C', '001'), setCode: '30TH-C', setName: 'Coleção Clássica de 30 Anos', setNumber: '001', tpciCode: '30TH-C 001', tpciSetCode: '30TH-C', localSetId: '30th-c' },
+  { id: '30TH-C-008', name: 'Pikachu & Zekrom GX', imageUrl: getTCGdexImageUrl('30TH-C', '008'), setCode: '30TH-C', setName: 'Coleção Clássica de 30 Anos', setNumber: '008', tpciCode: '30TH-C 008', tpciSetCode: '30TH-C', localSetId: '30th-c' }
 ];
 
 export function normalizeSearchTerm(str: string): string {
