@@ -23,6 +23,7 @@ import PokemonSprite from './PokemonSprite';
 import PokemonLoader from './PokemonLoader';
 import TrainerLog from './TrainerLog/TrainerLog';
 import ModalPortal from './ModalPortal';
+import PlayerWinrateChart from './PlayerWinrateChart';
 
 interface MatchesProps {
   currentMember: Member;
@@ -591,6 +592,13 @@ export default function Matches({ currentMember, setActiveTab, initialSubTab = '
         </div>
       ) : (
         <div id="match-history-container" className="space-y-6 animate-fade-in">
+
+          {/* Player Winrate & Distribution Visualization (Recharts) */}
+          <PlayerWinrateChart 
+            currentMember={currentMember}
+            allMatches={matches}
+            filteredMatches={filteredMatches}
+          />
 
           {/* Filter panel */}
           <div className="bg-slate-900/60 border border-slate-800 p-4 rounded-xl flex flex-wrap gap-4 items-center justify-between">

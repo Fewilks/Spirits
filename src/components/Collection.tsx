@@ -728,7 +728,7 @@ export default function Collection({ currentMember }: CollectionProps) {
                     className="w-full px-3 py-2.5 bg-slate-900 border border-slate-700 focus:border-purple-500 rounded-xl text-white text-sm outline-none font-medium cursor-pointer"
                   >
                     <option value="">Todas as Coleções (Busca Global)</option>
-                    {Object.entries(groupedSets).map(([seriesName, groupList]) => (
+                    {Object.entries(groupedSets).map(([seriesName, groupList]: [string, any[]]) => (
                       <optgroup key={`modal-group-${seriesName}`} label={seriesName} className="bg-slate-900 font-bold text-purple-300">
                         {groupList.map((s: any, idx: number) => (
                           <option key={`set-opt-${s.id || 'set'}-${idx}`} value={s.id} className="text-white font-medium bg-slate-950">
