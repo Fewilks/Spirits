@@ -2,7 +2,18 @@ import React, { useState } from 'react';
 import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip } from 'recharts';
 import { Member, MatchRecord } from '../types';
 import PokemonSprite from './PokemonSprite';
-import { Trophy, TrendingUp, Target, Award, PieChart as PieChartIcon } from 'lucide-react';
+import { 
+  Trophy, 
+  XCircle, 
+  MinusCircle, 
+  Eye, 
+  EyeOff, 
+  RotateCcw, 
+  Target, 
+  Award, 
+  PieChart as PieChartIcon,
+  SlidersHorizontal
+} from 'lucide-react';
 
 interface PlayerWinrateChartProps {
   currentMember: Member;
@@ -10,7 +21,21 @@ interface PlayerWinrateChartProps {
   filteredMatches?: MatchRecord[];
 }
 
+type CategoryKey = 'win' | 'loss' | 'draw';
+
+interface LegendCategoryConfig {
+  key: CategoryKey;
+  name: string;
+  value: number;
+  color: string;
+  borderColor: string;
+  activeBg: string;
+  textColor: string;
+  icon: React.ReactNode;
+}
+
 interface ChartDataPoint {
+  key: CategoryKey;
   name: string;
   value: number;
   color: string;
@@ -24,6 +49,30 @@ export default function PlayerWinrateChart({
 }: PlayerWinrateChartProps) {
   const [dataScope, setDataScope] = useState<'all' | 'filtered'>('all');
 
+  // Estado para alternar a visibilidade de cada categoria (Vitória, Derrota, Empate)
+  const [visibleCategories, setVisibleCategories] = useState<Record<CategoryKey, boolean>>({
+    win: true,
+    loss: true,
+    draw: true,
+  });
+
+  // Alterna visibilidade de uma categoria específica
+  const handleToggleCategory = (key: CategoryKey) => {
+    setVisibleCategories(prev => ({
+      ...prev,
+      [key]: !prev[key]
+    }));
+  };
+
+  // Restaura todas as categorias para visíveis
+  const handleShowAllCategories = () => {
+    setVisibleCategories({
+      win: true,
+      loss: true,
+      draw: true,
+    });
+  };
+
   // Compute stats for current member
   const computeStats = (matchList: MatchRecord[]) => {
     let wins = 0;
@@ -36,7 +85,7 @@ export default function PlayerWinrateChart({
         else if (m.result === 'loss') losses++;
         else draws++;
       } else if (m.player2IsMember && m.player2Id === currentMember.id) {
-        // From player 2's perspective
+        // Perspectiva do jogador 2
         if (m.result === 'win') losses++;
         else if (m.result === 'loss') wins++;
         else draws++;
@@ -44,7 +93,7 @@ export default function PlayerWinrateChart({
     });
 
     const totalFromMatches = wins + losses + draws;
-    // Fallback to currentMember stats if no matches are found in match history
+    // Fallback para os dados do próprio membro se não houver registros detalhados de partidas
     const finalWins = totalFromMatches > 0 ? wins : (currentMember.wins || 0);
     const finalLosses = totalFromMatches > 0 ? losses : (currentMember.losses || 0);
     const finalDraws = totalFromMatches > 0 ? draws : (currentMember.draws || 0);
@@ -64,33 +113,61 @@ export default function PlayerWinrateChart({
   const filteredStats = filteredMatches ? computeStats(filteredMatches) : allStats;
   const activeStats = dataScope === 'filtered' && filteredMatches ? filteredStats : allStats;
 
-  const data: ChartDataPoint[] = [
+  // Configuração das três categorias com seus ícones e estilos
+  const categories: LegendCategoryConfig[] = [
     {
+      key: 'win',
       name: 'Vitórias',
       value: activeStats.wins,
       color: '#10b981', // emerald-500
-      percentage: activeStats.total > 0 ? Math.round((activeStats.wins / activeStats.total) * 100) : 0
+      borderColor: 'border-emerald-500/40',
+      activeBg: 'bg-emerald-950/40 hover:bg-emerald-900/50',
+      textColor: 'text-emerald-400',
+      icon: <Trophy className="w-4 h-4 text-emerald-400 shrink-0" />
     },
     {
+      key: 'loss',
       name: 'Derrotas',
       value: activeStats.losses,
       color: '#f43f5e', // rose-500
-      percentage: activeStats.total > 0 ? Math.round((activeStats.losses / activeStats.total) * 100) : 0
+      borderColor: 'border-rose-500/40',
+      activeBg: 'bg-rose-950/40 hover:bg-rose-900/50',
+      textColor: 'text-rose-400',
+      icon: <XCircle className="w-4 h-4 text-rose-400 shrink-0" />
     },
     {
+      key: 'draw',
       name: 'Empates',
       value: activeStats.draws,
       color: '#94a3b8', // slate-400
-      percentage: activeStats.total > 0 ? Math.round((activeStats.draws / activeStats.total) * 100) : 0
+      borderColor: 'border-slate-500/40',
+      activeBg: 'bg-slate-800/40 hover:bg-slate-700/50',
+      textColor: 'text-slate-300',
+      icon: <MinusCircle className="w-4 h-4 text-slate-400 shrink-0" />
     }
-  ].filter(d => d.value > 0);
+  ];
 
-  // Custom Recharts Tooltip
+  // Dados calculados para cada categoria
+  const allCategoryData: ChartDataPoint[] = categories.map(cat => ({
+    key: cat.key,
+    name: cat.name,
+    value: cat.value,
+    color: cat.color,
+    percentage: activeStats.total > 0 ? Math.round((cat.value / activeStats.total) * 100) : 0
+  }));
+
+  // Fatias ativas no gráfico de pizza conforme seleção do usuário na legenda
+  const activeChartData = allCategoryData.filter(d => visibleCategories[d.key] && d.value > 0);
+  
+  const hasHiddenCategories = Object.values(visibleCategories).some(v => !v);
+  const activeVisibleTotal = activeChartData.reduce((acc, curr) => acc + curr.value, 0);
+
+  // Custom Recharts Tooltip com design dark theme
   const CustomTooltip = ({ active, payload }: any) => {
     if (active && payload && payload.length) {
       const item = payload[0].payload as ChartDataPoint;
       return (
-        <div className="bg-slate-950/95 border border-slate-700/80 p-3 rounded-xl shadow-2xl backdrop-blur-md text-xs">
+        <div className="bg-slate-950/95 border border-slate-700/80 p-3 rounded-xl shadow-2xl backdrop-blur-md text-xs pointer-events-none">
           <div className="flex items-center gap-2 font-bold mb-1">
             <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: item.color }} />
             <span className="text-white">{item.name}</span>
@@ -99,8 +176,13 @@ export default function PlayerWinrateChart({
             Quantidade: <strong className="text-white font-mono">{item.value}</strong>
           </div>
           <div className="text-slate-300">
-            Proporção: <strong className="text-white font-mono">{item.percentage}%</strong>
+            Proporção Global: <strong className="text-white font-mono">{item.percentage}%</strong>
           </div>
+          {activeVisibleTotal !== activeStats.total && activeVisibleTotal > 0 && (
+            <div className="text-purple-300 text-[10px] mt-0.5 font-mono">
+              Fatia visível: {Math.round((item.value / activeVisibleTotal) * 100)}%
+            </div>
+          )}
         </div>
       );
     }
@@ -169,106 +251,257 @@ export default function PlayerWinrateChart({
         )}
       </div>
 
-      {/* Main Content: Recharts Pie Chart + Metrics Cards */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
-        {/* Left / Center: Interactive Recharts Pie Chart */}
-        <div className="lg:col-span-5 flex flex-col items-center justify-center">
-          {activeStats.total > 0 ? (
-            <div className="relative w-full max-w-[260px] h-[210px] flex items-center justify-center">
-              <ResponsiveContainer width="100%" height={210}>
-                <PieChart>
-                  <Tooltip content={<CustomTooltip />} />
-                  <Pie
-                    data={data}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={55}
-                    outerRadius={80}
-                    paddingAngle={4}
-                    dataKey="value"
-                    stroke="#0f172a"
-                    strokeWidth={2}
-                    animationDuration={800}
-                  >
-                    {data.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
-                    ))}
-                  </Pie>
-                </PieChart>
-              </ResponsiveContainer>
+      {/* Main Content: Recharts Pie Chart with Custom Side Legend + Metrics Cards */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
+        
+        {/* Left Column: Recharts Pie Chart alongside Custom Side Legend */}
+        <div className="lg:col-span-7 bg-slate-950/50 border border-slate-800/80 rounded-2xl p-4 flex flex-col justify-between">
+          <div className="flex items-center justify-between pb-3 mb-2 border-b border-slate-850">
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-1.5">
+              <SlidersHorizontal className="w-3.5 h-3.5 text-purple-400" />
+              <span>Gráfico de Pizza & Legenda Interativa</span>
+            </span>
 
-              {/* Donut Center Display */}
-              <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                <span className="text-2xl font-black text-white font-mono tracking-tight">
-                  {activeStats.winrate}%
-                </span>
-                <span className="text-[10px] uppercase font-bold tracking-wider text-slate-400">
-                  Winrate
+            {hasHiddenCategories && (
+              <button
+                type="button"
+                onClick={handleShowAllCategories}
+                className="px-2 py-0.5 bg-purple-950/50 hover:bg-purple-900/60 border border-purple-700/50 text-purple-300 text-[11px] font-semibold rounded-md flex items-center gap-1 cursor-pointer transition-all"
+                title="Restaurar todas as categorias no gráfico"
+              >
+                <RotateCcw className="w-3 h-3" />
+                <span>Restaurar Legenda</span>
+              </button>
+            )}
+          </div>
+
+          <div className="flex flex-col sm:flex-row items-center justify-around gap-6 my-auto">
+            {/* The Donut Pie Chart */}
+            <div className="relative w-[190px] h-[190px] shrink-0 flex items-center justify-center">
+              {activeStats.total > 0 && activeChartData.length > 0 ? (
+                <>
+                  <ResponsiveContainer width={190} height={190}>
+                    <PieChart>
+                      <Tooltip content={<CustomTooltip />} />
+                      <Pie
+                        data={activeChartData}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={55}
+                        outerRadius={82}
+                        paddingAngle={activeChartData.length > 1 ? 4 : 0}
+                        dataKey="value"
+                        stroke="#0f172a"
+                        strokeWidth={2}
+                        animationDuration={500}
+                      >
+                        {activeChartData.map((entry) => (
+                          <Cell key={`cell-${entry.key}`} fill={entry.color} />
+                        ))}
+                      </Pie>
+                    </PieChart>
+                  </ResponsiveContainer>
+
+                  {/* Donut Center Display */}
+                  <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none text-center">
+                    <span className="text-2xl font-black text-white font-mono tracking-tight leading-none">
+                      {activeStats.winrate}%
+                    </span>
+                    <span className="text-[10px] uppercase font-bold tracking-wider text-slate-400 mt-1">
+                      Winrate
+                    </span>
+                    {hasHiddenCategories && (
+                      <span className="text-[9px] text-purple-400 font-semibold font-mono">
+                        (Filtrado)
+                      </span>
+                    )}
+                  </div>
+                </>
+              ) : activeStats.total > 0 && activeChartData.length === 0 ? (
+                <div className="w-full h-full flex flex-col items-center justify-center text-center p-3 border border-dashed border-slate-800 rounded-full bg-slate-900/30">
+                  <EyeOff className="w-6 h-6 text-slate-500 mb-1" />
+                  <span className="text-[11px] font-bold text-slate-400">Todas ocultas</span>
+                  <button
+                    type="button"
+                    onClick={handleShowAllCategories}
+                    className="text-[10px] text-purple-400 hover:text-purple-300 font-bold underline mt-1 cursor-pointer"
+                  >
+                    Exibir todas
+                  </button>
+                </div>
+              ) : (
+                <div className="w-full h-full flex flex-col items-center justify-center text-center p-3 border border-dashed border-slate-800 rounded-full bg-slate-900/30">
+                  <Trophy className="w-6 h-6 text-slate-600 mb-1" />
+                  <span className="text-[11px] font-bold text-slate-400">Sem partidas</span>
+                </div>
+              )}
+            </div>
+
+            {/* Custom Side Legend with Toggle Functionality */}
+            <div className="flex flex-col gap-2.5 w-full sm:w-auto min-w-[210px]" id="pie-chart-custom-legend">
+              <div className="text-[10px] uppercase font-bold tracking-wider text-slate-400 flex items-center justify-between">
+                <span>Clique para alternar:</span>
+                <span className="text-slate-500 font-mono">
+                  {Object.values(visibleCategories).filter(Boolean).length}/3 visíveis
                 </span>
               </div>
-            </div>
-          ) : (
-            <div className="w-full h-[180px] flex flex-col items-center justify-center text-center p-4 border border-dashed border-slate-800 rounded-xl bg-slate-950/40">
-              <Trophy className="w-8 h-8 text-slate-600 mb-2" />
-              <p className="text-xs font-semibold text-slate-400">Nenhuma partida registrada</p>
-              <p className="text-[11px] text-slate-500 mt-0.5">
-                Cadastre confrontos ou sincronize logs do PTCGL para visualizar o gráfico.
+
+              {categories.map(cat => {
+                const isVisible = visibleCategories[cat.key];
+                const percent = activeStats.total > 0 ? Math.round((cat.value / activeStats.total) * 100) : 0;
+
+                return (
+                  <button
+                    key={`legend-btn-${cat.key}`}
+                    id={`legend-toggle-${cat.key}`}
+                    type="button"
+                    onClick={() => handleToggleCategory(cat.key)}
+                    className={`group flex items-center justify-between gap-3 px-3 py-2.5 rounded-xl border transition-all text-xs cursor-pointer text-left select-none ${
+                      isVisible
+                        ? `${cat.activeBg} ${cat.borderColor} text-white shadow-sm ring-1 ring-white/5`
+                        : 'bg-slate-950/40 border-slate-850 text-slate-500 opacity-45 hover:opacity-75 hover:border-slate-700'
+                    }`}
+                    title={isVisible ? `Clique para ocultar ${cat.name} do gráfico` : `Clique para exibir ${cat.name} no gráfico`}
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <div className={`p-1 rounded-lg transition-all ${
+                        isVisible ? 'bg-slate-900/90' : 'bg-slate-900/40 grayscale'
+                      }`}>
+                        {cat.icon}
+                      </div>
+                      <div>
+                        <div className={`font-bold transition-all ${
+                          isVisible ? 'text-slate-100' : 'line-through text-slate-500'
+                        }`}>
+                          {cat.name}
+                        </div>
+                        <div className="text-[10px] text-slate-400 font-mono">
+                          {percent}% do total
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 font-mono">
+                      <span className={`text-sm font-black transition-all ${
+                        isVisible ? cat.textColor : 'text-slate-500'
+                      }`}>
+                        {cat.value}
+                      </span>
+                      <span className="p-1 rounded-md bg-slate-950/70 border border-slate-800 text-slate-400 group-hover:text-white transition-colors">
+                        {isVisible ? (
+                          <Eye className="w-3.5 h-3.5 text-emerald-400" />
+                        ) : (
+                          <EyeOff className="w-3.5 h-3.5 text-slate-500" />
+                        )}
+                      </span>
+                    </div>
+                  </button>
+                );
+              })}
+
+              <p className="text-[10px] text-slate-500 italic mt-0.5">
+                💡 Clique em qualquer resultado para ocultar/exibir sua fatia.
               </p>
             </div>
-          )}
+          </div>
         </div>
 
-        {/* Right: Detailed Metric Cards and Distribution Breakdown */}
-        <div className="lg:col-span-7 flex flex-col justify-center space-y-3.5">
-          {/* Top Quick Badges */}
+        {/* Right Column: Detailed Metric Cards and Distribution Breakdown */}
+        <div className="lg:col-span-5 flex flex-col justify-between space-y-3.5">
+          {/* Top Quick Badges (also interactive with the toggle) */}
           <div className="grid grid-cols-3 gap-2.5">
             {/* Wins */}
-            <div className="bg-emerald-950/30 border border-emerald-500/20 hover:border-emerald-500/40 rounded-xl p-3 transition-all">
+            <button
+              type="button"
+              onClick={() => handleToggleCategory('win')}
+              className={`rounded-xl p-3 transition-all text-left cursor-pointer border ${
+                visibleCategories.win
+                  ? 'bg-emerald-950/30 border-emerald-500/30 hover:border-emerald-500/60 shadow-sm'
+                  : 'bg-slate-950/40 border-slate-850 opacity-50 hover:opacity-80'
+              }`}
+              title="Clique para alternar visibilidade no gráfico"
+            >
               <div className="flex items-center justify-between">
-                <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-400">Vitórias</span>
-                <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                <span className={`text-[11px] font-bold uppercase tracking-wider ${
+                  visibleCategories.win ? 'text-emerald-400' : 'text-slate-500 line-through'
+                }`}>
+                  Vitórias
+                </span>
+                <span className={`w-2 h-2 rounded-full ${visibleCategories.win ? 'bg-emerald-500 ring-2 ring-emerald-500/30' : 'bg-slate-600'}`} />
               </div>
               <div className="mt-1 flex items-baseline gap-1.5">
-                <span className="text-xl font-black text-emerald-300 font-mono">
+                <span className={`text-xl font-black font-mono ${
+                  visibleCategories.win ? 'text-emerald-300' : 'text-slate-500'
+                }`}>
                   {activeStats.wins}
                 </span>
                 <span className="text-[11px] text-emerald-400/80 font-mono">
                   ({activeStats.total > 0 ? Math.round((activeStats.wins / activeStats.total) * 100) : 0}%)
                 </span>
               </div>
-            </div>
+            </button>
 
             {/* Losses */}
-            <div className="bg-rose-950/30 border border-rose-500/20 hover:border-rose-500/40 rounded-xl p-3 transition-all">
+            <button
+              type="button"
+              onClick={() => handleToggleCategory('loss')}
+              className={`rounded-xl p-3 transition-all text-left cursor-pointer border ${
+                visibleCategories.loss
+                  ? 'bg-rose-950/30 border-rose-500/30 hover:border-rose-500/60 shadow-sm'
+                  : 'bg-slate-950/40 border-slate-850 opacity-50 hover:opacity-80'
+              }`}
+              title="Clique para alternar visibilidade no gráfico"
+            >
               <div className="flex items-center justify-between">
-                <span className="text-[11px] font-bold uppercase tracking-wider text-rose-400">Derrotas</span>
-                <span className="w-2 h-2 rounded-full bg-rose-500" />
+                <span className={`text-[11px] font-bold uppercase tracking-wider ${
+                  visibleCategories.loss ? 'text-rose-400' : 'text-slate-500 line-through'
+                }`}>
+                  Derrotas
+                </span>
+                <span className={`w-2 h-2 rounded-full ${visibleCategories.loss ? 'bg-rose-500 ring-2 ring-rose-500/30' : 'bg-slate-600'}`} />
               </div>
               <div className="mt-1 flex items-baseline gap-1.5">
-                <span className="text-xl font-black text-rose-300 font-mono">
+                <span className={`text-xl font-black font-mono ${
+                  visibleCategories.loss ? 'text-rose-300' : 'text-slate-500'
+                }`}>
                   {activeStats.losses}
                 </span>
                 <span className="text-[11px] text-rose-400/80 font-mono">
                   ({activeStats.total > 0 ? Math.round((activeStats.losses / activeStats.total) * 100) : 0}%)
                 </span>
               </div>
-            </div>
+            </button>
 
             {/* Draws */}
-            <div className="bg-slate-800/40 border border-slate-700/40 hover:border-slate-600/50 rounded-xl p-3 transition-all">
+            <button
+              type="button"
+              onClick={() => handleToggleCategory('draw')}
+              className={`rounded-xl p-3 transition-all text-left cursor-pointer border ${
+                visibleCategories.draw
+                  ? 'bg-slate-800/40 border-slate-700/50 hover:border-slate-600/80 shadow-sm'
+                  : 'bg-slate-950/40 border-slate-850 opacity-50 hover:opacity-80'
+              }`}
+              title="Clique para alternar visibilidade no gráfico"
+            >
               <div className="flex items-center justify-between">
-                <span className="text-[11px] font-bold uppercase tracking-wider text-slate-300">Empates</span>
-                <span className="w-2 h-2 rounded-full bg-slate-400" />
+                <span className={`text-[11px] font-bold uppercase tracking-wider ${
+                  visibleCategories.draw ? 'text-slate-300' : 'text-slate-500 line-through'
+                }`}>
+                  Empates
+                </span>
+                <span className={`w-2 h-2 rounded-full ${visibleCategories.draw ? 'bg-slate-400 ring-2 ring-slate-400/30' : 'bg-slate-600'}`} />
               </div>
               <div className="mt-1 flex items-baseline gap-1.5">
-                <span className="text-xl font-black text-slate-200 font-mono">
+                <span className={`text-xl font-black font-mono ${
+                  visibleCategories.draw ? 'text-slate-200' : 'text-slate-500'
+                }`}>
                   {activeStats.draws}
                 </span>
                 <span className="text-[11px] text-slate-400 font-mono">
                   ({activeStats.total > 0 ? Math.round((activeStats.draws / activeStats.total) * 100) : 0}%)
                 </span>
               </div>
-            </div>
+            </button>
           </div>
 
           {/* Progress bar showing visual proportion */}
@@ -280,17 +513,17 @@ export default function PlayerWinrateChart({
               </div>
               <div className="h-2 w-full bg-slate-950 rounded-full overflow-hidden flex border border-slate-800">
                 <div 
-                  className="bg-emerald-500 h-full transition-all duration-500" 
+                  className={`h-full transition-all duration-500 ${visibleCategories.win ? 'bg-emerald-500' : 'bg-emerald-500/20'}`} 
                   style={{ width: `${activeStats.total > 0 ? (activeStats.wins / activeStats.total) * 100 : 0}%` }}
                   title={`Vitórias: ${activeStats.wins}`}
                 />
                 <div 
-                  className="bg-rose-500 h-full transition-all duration-500" 
+                  className={`h-full transition-all duration-500 ${visibleCategories.loss ? 'bg-rose-500' : 'bg-rose-500/20'}`} 
                   style={{ width: `${activeStats.total > 0 ? (activeStats.losses / activeStats.total) * 100 : 0}%` }}
                   title={`Derrotas: ${activeStats.losses}`}
                 />
                 <div 
-                  className="bg-slate-400 h-full transition-all duration-500" 
+                  className={`h-full transition-all duration-500 ${visibleCategories.draw ? 'bg-slate-400' : 'bg-slate-400/20'}`} 
                   style={{ width: `${activeStats.total > 0 ? (activeStats.draws / activeStats.total) * 100 : 0}%` }}
                   title={`Empates: ${activeStats.draws}`}
                 />
@@ -299,10 +532,10 @@ export default function PlayerWinrateChart({
           )}
 
           {/* Quick info footer */}
-          <div className="flex flex-wrap items-center justify-between gap-2 text-[11px] text-slate-400 bg-slate-950/50 px-3 py-2 rounded-lg border border-slate-800/80">
+          <div className="flex flex-wrap items-center justify-between gap-2 text-[11px] text-slate-400 bg-slate-950/50 px-3 py-2.5 rounded-xl border border-slate-800/80">
             <span className="flex items-center gap-1.5 text-slate-300">
               <Target className="w-3.5 h-3.5 text-purple-400" />
-              <span>Desempenho calculado para <strong>{currentMember.name}</strong></span>
+              <span>Desempenho de <strong>{currentMember.name}</strong></span>
             </span>
             {currentMember.officialPoints !== undefined && currentMember.officialPoints > 0 && (
               <span className="flex items-center gap-1 text-amber-300 font-mono font-bold">
