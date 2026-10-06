@@ -162,6 +162,9 @@ export default function PlayerWinrateChart({
   const hasHiddenCategories = Object.values(visibleCategories).some(v => !v);
   const activeVisibleTotal = activeChartData.reduce((acc, curr) => acc + curr.value, 0);
 
+  // Chave dinâmica para acionar animação de entrada 'fade-in' e escala suave ao carregar ou alterar dados
+  const chartAnimationKey = `chart-${dataScope}-${activeChartData.map(d => `${d.key}:${d.value}`).join('_')}`;
+
   // Custom Recharts Tooltip com design dark theme
   const CustomTooltip = ({ active, payload }: any) => {
     if (active && payload && payload.length) {
@@ -276,8 +279,11 @@ export default function PlayerWinrateChart({
           </div>
 
           <div className="flex flex-col sm:flex-row items-center justify-around gap-6 my-auto">
-            {/* The Donut Pie Chart */}
-            <div className="relative w-[190px] h-[190px] shrink-0 flex items-center justify-center">
+            {/* The Donut Pie Chart com animação fade-in e escala suave */}
+            <div 
+              key={chartAnimationKey}
+              className="animate-chart-enter relative w-[190px] h-[190px] shrink-0 flex items-center justify-center transition-all duration-300"
+            >
               {activeStats.total > 0 && activeChartData.length > 0 ? (
                 <>
                   <ResponsiveContainer width={190} height={190}>
@@ -293,17 +299,27 @@ export default function PlayerWinrateChart({
                         dataKey="value"
                         stroke="#0f172a"
                         strokeWidth={2}
-                        animationDuration={500}
+                        isAnimationActive={true}
+                        animationBegin={40}
+                        animationDuration={700}
+                        animationEasing="ease-out"
                       >
                         {activeChartData.map((entry) => (
-                          <Cell key={`cell-${entry.key}`} fill={entry.color} />
+                          <Cell 
+                            key={`cell-${entry.key}`} 
+                            fill={entry.color}
+                            className="cursor-pointer transition-transform duration-300 hover:scale-105"
+                          />
                         ))}
                       </Pie>
                     </PieChart>
                   </ResponsiveContainer>
 
-                  {/* Donut Center Display */}
-                  <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none text-center">
+                  {/* Donut Center Display com animação de fade-in suave */}
+                  <div 
+                    key={`center-${chartAnimationKey}`}
+                    className="animate-fade-in absolute inset-0 flex flex-col items-center justify-center pointer-events-none text-center"
+                  >
                     <span className="text-2xl font-black text-white font-mono tracking-tight leading-none">
                       {activeStats.winrate}%
                     </span>
@@ -318,7 +334,7 @@ export default function PlayerWinrateChart({
                   </div>
                 </>
               ) : activeStats.total > 0 && activeChartData.length === 0 ? (
-                <div className="w-full h-full flex flex-col items-center justify-center text-center p-3 border border-dashed border-slate-800 rounded-full bg-slate-900/30">
+                <div className="animate-chart-enter w-full h-full flex flex-col items-center justify-center text-center p-3 border border-dashed border-slate-800 rounded-full bg-slate-900/30">
                   <EyeOff className="w-6 h-6 text-slate-500 mb-1" />
                   <span className="text-[11px] font-bold text-slate-400">Todas ocultas</span>
                   <button
@@ -330,7 +346,7 @@ export default function PlayerWinrateChart({
                   </button>
                 </div>
               ) : (
-                <div className="w-full h-full flex flex-col items-center justify-center text-center p-3 border border-dashed border-slate-800 rounded-full bg-slate-900/30">
+                <div className="animate-chart-enter w-full h-full flex flex-col items-center justify-center text-center p-3 border border-dashed border-slate-800 rounded-full bg-slate-900/30">
                   <Trophy className="w-6 h-6 text-slate-600 mb-1" />
                   <span className="text-[11px] font-bold text-slate-400">Sem partidas</span>
                 </div>
