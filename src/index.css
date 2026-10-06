@@ -61,3 +61,53 @@
   animation: evolutionGlow 2s infinite ease-in-out;
 }
 
+/* Animação suave de entrada fade-in e escala para fatias e gráficos de pizza */
+@keyframes chartFadeScale {
+  0% {
+    opacity: 0;
+    transform: scale(0.85);
+  }
+  60% {
+    opacity: 0.95;
+    transform: scale(1.02);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.animate-chart-enter {
+  animation: chartFadeScale 0.65s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  transform-origin: center center;
+  will-change: transform, opacity;
+}
+
+@keyframes sliceScaleIn {
+  from {
+    transform: scale(0.9);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.animate-slice-scale {
+  animation: sliceScaleIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  transform-origin: center center;
+}
+
+/* Microinteração e transição suave nas fatias SVG do Recharts */
+.recharts-pie-sector path {
+  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), filter 0.3s ease, opacity 0.3s ease;
+  transform-origin: center center;
+}
+
+.recharts-pie-sector:hover path {
+  filter: brightness(1.15) drop-shadow(0 0 8px rgba(168, 85, 247, 0.35));
+  transform: scale(1.03);
+}
+
+
